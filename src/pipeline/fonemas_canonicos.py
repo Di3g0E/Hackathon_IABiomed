@@ -15,7 +15,7 @@ Notación IPA usada (multi-carácter separados por espacio):
   líquidas: l  ɾ (r simple/tap)  r (rr / r- inicial, vibrante múltiple)
   palatal lateral/aprox: ʎ (ll en distinción)  ʝ (y/ll en yeísmo)
 
-Ejecutar:  uv run python src/fonemas_canonicos.py   ->  data/fonemas_canonicos.csv
+Ejecutar:  uv run python src/pipeline/fonemas_canonicos.py   ->  data/fonemas_canonicos.csv
 """
 from __future__ import annotations
 
@@ -28,7 +28,7 @@ try:
 except Exception:
     pass
 
-RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+RAIZ = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # palabra -> (fonemas_primarios (España estándar), nota de variantes dialectales)
 REF = {

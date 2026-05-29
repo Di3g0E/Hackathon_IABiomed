@@ -20,8 +20,8 @@ try:
 except Exception:
     pass
 
-# El script vive en src/; la raíz del proyecto es su carpeta padre.
-RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# El script vive en src/scripts/; la raíz del proyecto está dos niveles arriba.
+RAIZ = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 BASE = os.path.join(RAIZ, "data", "raw", "Base_datos_palabras")
 
 SEX_TOKENS = {"h": "hombre", "m": "mujer"}

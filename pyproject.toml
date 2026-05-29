@@ -14,6 +14,8 @@ dependencies = [
     "matplotlib",
     "tqdm",
     "jupyter",
+    "allosaurus>=1.0.2",
+    "transformers>=5.9.0",
 ]
 
 # --- PyTorch con CUDA 12.4 (compatible con driver 572.16 / CUDA 12.8) ---

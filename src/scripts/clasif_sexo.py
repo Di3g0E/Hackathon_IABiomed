@@ -7,7 +7,7 @@ Quick win basado en F0/pitch. Metodología honesta:
   - clase 'balanced' por el desbalance 78/22
   - métricas macro (P/R/F1) + matriz de confusión + tiempos (criterios del reto)
 
-Ejecutar:  uv run python src/clasif_sexo.py
+Ejecutar:  uv run python src/scripts/clasif_sexo.py
 """
 from __future__ import annotations
 
@@ -32,11 +32,12 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import Pipeline
 from sklearn.metrics import classification_report, confusion_matrix, ConfusionMatrixDisplay, f1_score
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from features import PitchFeatures, SR
-from splits import stratified_group_kfold
+SRC = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, SRC)
+from pipeline.features import PitchFeatures, SR
+from pipeline.splits import stratified_group_kfold
 
-RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+RAIZ = os.path.dirname(SRC)
 META_PROC = os.path.join(RAIZ, "data", "processed", "metadata.csv")
 DIR_RES = os.path.join(RAIZ, "results")
 N_SPLITS = 5

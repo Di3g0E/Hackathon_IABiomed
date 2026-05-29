@@ -27,10 +27,11 @@ import matplotlib
 matplotlib.use("Agg")  # sin ventana: solo guardar figuras
 import matplotlib.pyplot as plt
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from preprocessing import build_preprocess_pipeline, SR
+SRC = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, SRC)
+from pipeline.preprocessing import build_preprocess_pipeline, SR
 
-RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+RAIZ = os.path.dirname(SRC)
 META_IN = os.path.join(RAIZ, "metadata.csv")
 DIR_PROC = os.path.join(RAIZ, "data", "processed")
 DIR_RES = os.path.join(RAIZ, "results")
