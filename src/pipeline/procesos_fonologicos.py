@@ -69,9 +69,9 @@ def clasifica_sustitucion(ref: str, hip: str) -> str:
         if mr == mh and lr == lh and vr != vh:
             return "sonorización" if vh == "sonoro" else "ensordecimiento"
         if mr == "rótica" and mh == "lateral":
-            return "lateralización (r→l)"
+            return "lateralización"
         if mr == "lateral" and mh == "rótica":
-            return "rotacismo (l→r)"
+            return "rotacismo"
         if lr in ORDEN_LUGAR and lh in ORDEN_LUGAR:
             if ORDEN_LUGAR.index(lh) < ORDEN_LUGAR.index(lr):
                 return "frontalización"
