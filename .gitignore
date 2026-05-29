@@ -1,0 +1,19 @@
+# Entorno / uv
+.venv/
+__pycache__/
+*.pyc
+
+# Datos pesados (no versionar audios ni corpus descargados)
+data/raw/*
+data/processed/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+
+# Resultados / notebooks ejecutados
+results/*
+!results/.gitkeep
+.ipynb_checkpoints/
+
+# Sistema
+.DS_Store
+Thumbs.db
