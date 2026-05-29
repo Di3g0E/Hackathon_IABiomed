@@ -41,7 +41,7 @@ lista para la app. T2 y T3 incorporan **umbral de confianza + corrección manual
 
 - **227 audios** de 32 palabras, **142 hablantes** distintos, de Forvo.
 - **Metadatos extraídos del nombre de archivo** (`palabra_usuario_sexo_pais.mp3`) →
-  [metadata.csv](metadata.csv). Sin necesidad de anotación manual.
+  [data/metadata.csv](data/metadata.csv). Sin necesidad de anotación manual.
 - **Desbalances reales (parte del desafío):** sexo **178 H / 49 M**; origen
   **Latam 115 / España 97 / No nativo 15**. La clase *No nativo* es minúscula y además tiene un
   *confound*: 8 de sus 15 clips son la palabra `piedra`.
@@ -76,7 +76,7 @@ HABLANTE** (`StratifiedGroupKFold`) en todo el proyecto, para evitar la **fuga d
 
 Con **umbral de confianza** ([results/sexo_confianza.png](results/sexo_confianza.png)): a 0,90 el
 sistema **autocompleta el 74% al 95,8% de acierto** y deriva el resto al usuario. Confusión en
-[results/sexo_xlsr_confusion.png](results/sexo_xlsr_confusion.png).
+[results/sexo_confusion.png](results/sexo_confusion.png).
 
 ---
 
@@ -199,14 +199,13 @@ nombrado de dibujos, con un diseño *human-in-the-loop* responsable para uso mé
 Entorno con [`uv`](https://docs.astral.sh/uv/) (Python 3.11, PyTorch CUDA 12.4):
 ```
 uv sync
-uv run python src/scripts/build_metadata.py        # etiquetas
-uv run python src/scripts/run_preprocess.py         # preprocesado + EDA
-uv run python src/pipeline/fonemas_canonicos.py     # referencia IPA
-uv run python src/scripts/reconocer_fonemas.py      # T1 fonemas (comparación)
-uv run python src/scripts/detectar_procesos.py      # T1 procesos fonológicos + PCC
-uv run python src/scripts/clasif_sexo_v2.py         # T3 sexo (XLS-R + confianza)
-uv run python src/scripts/origen_confianza.py       # T2 origen (XLS-R + confianza)
-uv run python src/scripts/validar_infantil.py       # validación voz infantil
+uv run python src/scripts/1_preparar_datos.py       # metadata + preprocesado + EDA
+uv run python src/scripts/2_sexo.py                 # T3 sexo (F0 vs XLS-R + confianza)
+uv run python src/scripts/3_origen.py               # T2 origen (MFCC/ECAPA/XLS-R + confianza)
+uv run python src/scripts/4_fonemas.py              # T1 fonemas (wav2vec2 vs Allosaurus)
+uv run python src/scripts/5_procesos.py             # T1 procesos fonológicos + PCC
+uv run python src/scripts/6_validacion_infantil.py  # validación voz infantil
+uv run python src/pipeline/fonemas_canonicos.py     # (re)genera la referencia IPA
 ```
 Estructura y detalles en [README.md](README.md). Investigación clínica en
 [docs/investigacion_tdl_infantil.md](docs/investigacion_tdl_infantil.md).

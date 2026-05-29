@@ -9,6 +9,8 @@ Dos extractores (modelos CONGELADOS, solo inferencia):
 """
 from __future__ import annotations
 
+import os
+
 import numpy as np
 import torch
 
@@ -54,3 +56,24 @@ class XLSREmbedding:
                 h = self.model(iv).last_hidden_state  # (1, T, 1024)
             out.append(h.mean(dim=1).squeeze().detach().cpu().numpy())
         return np.array(out, dtype=np.float64)
+
+
+def cargar_embeddings_xlsr(df, raiz, sr=16000):
+    """Embeddings XLS-R de los clips de `df` (columna ruta_proc), con caché en disco."""
+    import librosa
+    cache_npy = os.path.join(raiz, "data", "processed", "emb_xlsr.npy")
+    cache_rut = os.path.join(raiz, "data", "processed", "emb_xlsr_rutas.txt")
+    rutas = list(df["ruta_proc"])
+    if os.path.exists(cache_npy) and os.path.exists(cache_rut):
+        with open(cache_rut, encoding="utf-8") as f:
+            if f.read().splitlines() == rutas:
+                print("Embeddings XLS-R cargados de caché.")
+                return np.load(cache_npy)
+    print("Calculando embeddings XLS-R (se cachean)...")
+    ondas = [librosa.load(os.path.join(raiz, r), sr=sr, mono=True)[0].astype(np.float32)
+             for r in rutas]
+    X = XLSREmbedding().embed_many(ondas)
+    np.save(cache_npy, X)
+    with open(cache_rut, "w", encoding="utf-8") as f:
+        f.write("\n".join(rutas))
+    return X
