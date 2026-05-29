@@ -55,3 +55,32 @@ class PitchFeatures(BaseEstimator, TransformerMixin):
 
     def get_feature_names_out(self, input_features=None):
         return np.array(self.NOMBRES)
+
+
+class MFCCFeatures(BaseEstimator, TransformerMixin):
+    """MFCC (timbre/articulación) resumidos por media y desviación.
+
+    Los MFCC capturan la "huella" espectral del tracto vocal -> útiles para
+    acento/origen. Por clip se resume cada coeficiente con media y std
+    (2*n_mfcc características), barato y robusto en clips cortos.
+    """
+
+    def __init__(self, sr: int = SR, n_mfcc: int = 13):
+        self.sr = sr
+        self.n_mfcc = n_mfcc
+
+    def fit(self, X, y=None):
+        return self
+
+    def _features_una(self, onda: np.ndarray) -> np.ndarray:
+        if onda is None or onda.size < self.sr // 20:
+            return np.zeros(2 * self.n_mfcc, dtype=np.float64)
+        mfcc = librosa.feature.mfcc(y=onda, sr=self.sr, n_mfcc=self.n_mfcc)
+        return np.concatenate([mfcc.mean(axis=1), mfcc.std(axis=1)])
+
+    def transform(self, X):
+        return np.array([self._features_una(o) for o in X], dtype=np.float64)
+
+    def get_feature_names_out(self, input_features=None):
+        return np.array([f"mfcc{i}_media" for i in range(self.n_mfcc)] +
+                        [f"mfcc{i}_std" for i in range(self.n_mfcc)])

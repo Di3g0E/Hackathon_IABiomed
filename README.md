@@ -58,8 +58,10 @@ uv run python src/pipeline/fonemas_canonicos.py # regenera la referencia IPA
 | Tarea | Modelo | F1 | Notas |
 |---|---|---|---|
 | T3 Sexo | F0 + LogReg | 0.742 (macro) | ultraligero (train 26 ms, infer 0.01 ms/clip) |
+| T3 Sexo | XLS-R + LogReg | 0.815 (macro) | +confianza/override; 95.8% acc en el 74% auto (umbral 0.90) |
 | T1 Fonemas | wav2vec2-xlsr-espeak | 0.862 | sin sesgo dialectal; PER 0.17 |
 | T1 Fonemas | Allosaurus | 0.655 | baseline ligero, menos preciso |
+| T2 Origen | XLS-R + LogReg (voto/hablante) | 0.62 (Esp vs Latam) | con umbral de confianza + override manual |
 
 ## Hardware de referencia
 Ryzen 7 5800H · 16 GB RAM · RTX 3050 Laptop (4 GB VRAM) → modelos preentrenados
