@@ -20,7 +20,9 @@ try:
 except Exception:
     pass
 
-BASE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Base_datos_palabras")
+# El script vive en src/; la raíz del proyecto es su carpeta padre.
+RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BASE = os.path.join(RAIZ, "data", "raw", "Base_datos_palabras")
 
 SEX_TOKENS = {"h": "hombre", "m": "mujer"}
 
@@ -89,7 +91,7 @@ def main():
                 revisar.append(f"pais_desconocido:{pais_raw}")
             if pais_raw in DUDOSOS:
                 revisar.append("origen_dudoso")
-            ruta_rel = os.path.join("Base_datos_palabras", carpeta, fn)
+            ruta_rel = os.path.join("data", "raw", "Base_datos_palabras", carpeta, fn)
             filas.append({
                 "ruta": ruta_rel,
                 "palabra": palabra,
@@ -100,7 +102,7 @@ def main():
                 "revisar": ";".join(revisar),
             })
 
-    salida = os.path.join(os.path.dirname(BASE), "metadata.csv")
+    salida = os.path.join(RAIZ, "metadata.csv")
     with open(salida, "w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=["ruta", "palabra", "hablante", "sexo", "pais", "origen", "revisar"])
         w.writeheader()
