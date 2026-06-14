@@ -67,6 +67,13 @@ REF = {
 }
 
 
+# NÚCLEO fijo para el re-test: subconjunto que cubre todo el inventario consonántico,
+# las vibrantes ɾ/r, los grupos (tr/bl/fr/dr) y diptongos (ie/ei). Editable.
+# El re-test = NUCLEO ∪ palabras falladas en pruebas previas.
+NUCLEO = ["tres", "blanco", "gorro", "chaqueta", "jabon", "niño",
+          "silla", "fruta", "piedra", "mosca", "peine", "cielo"]
+
+
 def main():
     salida = os.path.join(RAIZ, "data", "fonemas_canonicos.csv")
     filas = []

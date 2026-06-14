@@ -1,0 +1,9 @@
+id,texto,factor,peso
+orofacial,"¿Os han comentado algo del frenillo de la lengua, paladar o dentición?",equidad,0
+resfriado,¿Está hoy resfriado o muy congestionado?,equidad,0
+inteligibilidad,¿Le cuesta que personas de fuera de la familia le entiendan al hablar?,bandera,2
+tardio,¿Empezó a hablar (primeras palabras o frases) más tarde que otros niños?,bandera,2
+frases_cortas,¿Usa frases más cortas o simples que otros niños de su edad?,bandera,1
+encontrar_palabras,¿Le cuesta encontrar las palabras o las confunde a menudo?,bandera,1
+instrucciones,¿Tiene dificultad para seguir instrucciones de varios pasos?,bandera,1
+antecedentes,¿Hay antecedentes familiares de dificultades del lenguaje?,bandera,1

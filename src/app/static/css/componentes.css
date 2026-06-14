@@ -1,0 +1,510 @@
+/* ============================================================
+   HABLI · Componentes — layout con sidebar, chat de Lali, perfiles,
+   estrellas, botón flotante. Sin separadores duros: espacio y color.
+   ============================================================ */
+
+/* ---------- Layout interior (sidebar + topbar + contenido) ---------- */
+.app-shell {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  min-height: 100vh;
+  transition: grid-template-columns 250ms ease-out;
+}
+/* sidebar plegada (botón hamburguesa): se colapsa a 0 SIN sacarla del grid
+   (con display:none el contenido caería en la 1ª columna de 0px y "se cerraría todo") */
+.app-shell.plegada { grid-template-columns: 0 1fr; }
+.app-shell.plegada .sidebar {
+  overflow: hidden;
+  padding-left: 0;
+  padding-right: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* sin diferencia de color con el fondo: mismo fondo de página, solo espacio */
+.sidebar {
+  background: transparent;
+  padding: var(--habli-esp-6) var(--habli-esp-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--habli-esp-2);
+}
+.sidebar__logo { width: 150px; margin: 0 auto var(--habli-esp-8); display: block; }
+.sidebar__item {
+  display: flex;
+  align-items: center;
+  gap: var(--habli-esp-3);
+  min-height: 64px;
+  padding: var(--habli-esp-3) var(--habli-esp-4);
+  border: none;
+  border-radius: var(--habli-radio-md);
+  background: transparent;
+  font-size: var(--habli-fs-h3);
+  font-weight: var(--habli-peso-bold);
+  color: var(--habli-tinta-700);
+  text-align: left;
+  transition: background-color 200ms ease-out, color 200ms ease-out;
+}
+.sidebar__item:hover { background: rgba(255, 255, 255, 0.7); }
+.sidebar__item.activo { background: var(--habli-blanco); color: var(--habli-azul-700); }
+.sidebar__item .icono { font-size: 28px; }
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--habli-esp-4);
+  padding: var(--habli-esp-4) var(--habli-esp-6);
+}
+
+.contenido {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+.contenido__cuerpo {
+  flex: 1;
+  padding: 0 var(--habli-esp-6) var(--habli-esp-6);
+  max-width: 980px;
+  width: 100%;
+  margin: 0 auto;
+  animation: h-aparece 300ms ease-out;
+}
+
+/* hamburguesa: tres líneas, siempre visible (pliega/despliega el menú) */
+.hamburguesa {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: var(--habli-blanco);
+  border-radius: var(--habli-radio-md);
+  box-shadow: var(--habli-sombra-sm);
+  width: 56px; height: 56px;
+  font-size: 26px;
+  color: var(--habli-tinta-900);
+  transition: transform 200ms ease-out;
+}
+.hamburguesa:hover { transform: scale(1.06); }
+
+@media (max-width: 820px) {
+  .app-shell, .app-shell.plegada { grid-template-columns: 1fr; }
+  /* en móvil el menú es un overlay deslizante: anulamos el colapso de escritorio */
+  .app-shell.plegada .sidebar {
+    opacity: 1; pointer-events: auto;
+    padding: var(--habli-esp-6) var(--habli-esp-4);
+  }
+  .sidebar {
+    position: fixed; inset: 0 30% 0 0; z-index: 40;
+    transform: translateX(-105%);
+    transition: transform 250ms ease-out;
+    background: var(--habli-blanco);   /* en móvil flota sobre el contenido */
+    box-shadow: var(--habli-sombra-lg);
+  }
+  .sidebar.abierta { transform: none; }
+}
+
+/* ---------- Avatar de perfil ---------- */
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px; height: 56px;
+  border-radius: var(--habli-radio-full);
+  font-family: var(--habli-fuente-titulo);
+  font-size: 24px;
+  font-weight: var(--habli-peso-bold);
+  color: var(--habli-blanco);
+  flex: none;
+}
+.avatar--azul    { background: var(--habli-azul-500); }
+.avatar--verde   { background: var(--habli-verde-500); }
+.avatar--naranja { background: var(--habli-naranja-500); }
+/* avatar con imagen (cuadrada) recortada en círculo */
+.avatar--img {
+  background-size: cover;
+  background-position: center;
+  color: transparent;
+}
+
+/* selector de avatar (registro / perfil): cuadradas mostradas circulares,
+   grandes y centradas en la pantalla */
+.avatar-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--habli-esp-4);
+  justify-content: center;
+}
+.avatar-opcion {
+  width: 96px; height: 96px;
+  padding: 0;
+  border: 4px solid transparent;
+  border-radius: var(--habli-radio-full);
+  background: var(--habli-blanco);
+  box-shadow: var(--habli-sombra-md);
+  overflow: hidden;
+  transition: transform 200ms ease-out, border-color 200ms ease-out;
+}
+.avatar-opcion img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.avatar-opcion:hover { transform: scale(1.08); }
+.avatar-opcion.sel { border-color: var(--habli-azul-500); box-shadow: 0 0 0 3px var(--habli-azul-200); }
+
+/* botón de silencio del tono */
+.btn-mute {
+  border: none;
+  background: var(--habli-blanco);
+  border-radius: var(--habli-radio-full);
+  box-shadow: var(--habli-sombra-sm);
+  width: 48px; height: 48px;
+  font-size: 22px;
+  color: var(--habli-tinta-700);
+  transition: transform 200ms ease-out;
+}
+.btn-mute:hover { transform: scale(1.06); }
+/* botón de sonido SOLO durante la prueba: fijo en la esquina superior derecha */
+.btn-mute--prueba {
+  position: fixed;
+  top: var(--habli-esp-4);
+  right: var(--habli-esp-4);
+  z-index: 30;
+  width: 56px; height: 56px;
+  font-size: 24px;
+}
+.avatar--boton {
+  border: 3px solid transparent;
+  background-clip: padding-box;
+  box-shadow: 0 0 0 3px var(--habli-azul-200), var(--habli-sombra-sm);
+  cursor: pointer;
+  transition: transform 200ms ease-out;
+}
+.avatar--boton:hover { transform: scale(1.06); }
+
+/* ---------- Selector de perfiles (estilo Netflix) ---------- */
+.perfiles {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--habli-esp-8);
+  padding: var(--habli-esp-8);
+  background: var(--habli-grad-hero);
+}
+.perfiles__logo { width: 260px; }
+.perfiles__grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--habli-esp-6);
+}
+.perfil-card {
+  width: 190px;
+  padding: var(--habli-esp-6) var(--habli-esp-4);
+  border: none;
+  border-radius: var(--habli-radio-xl);
+  background: var(--habli-blanco);
+  box-shadow: var(--habli-sombra-md);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--habli-esp-3);
+  transition: transform 200ms ease-out, box-shadow 200ms ease-out;
+}
+.perfil-card:hover { transform: scale(1.05); box-shadow: var(--habli-sombra-lg); }
+.perfil-card .avatar { width: 88px; height: 88px; font-size: 40px; }
+.perfil-card__nombre {
+  font-family: var(--habli-fuente-titulo);
+  font-size: var(--habli-fs-h2);
+  font-weight: var(--habli-peso-bold);
+  color: var(--habli-tinta-900);
+}
+.perfil-card { position: relative; }
+.perfil-card--nuevo {
+  background: transparent;
+  border: 3px dashed var(--habli-azul-400);
+  box-shadow: none;
+  color: var(--habli-azul-700);
+}
+.perfil-card--nuevo .avatar { background: var(--habli-azul-200); color: var(--habli-azul-700); }
+/* botón de eliminar perfil (esquina): X limpia, estética de marca */
+.perfil-del {
+  position: absolute;
+  top: 8px; right: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px; height: 34px;
+  padding: 0;
+  border: none;
+  border-radius: var(--habli-radio-full);
+  background: var(--habli-blanco);
+  color: var(--habli-gris-500);
+  font-family: var(--habli-fuente-titulo);
+  font-size: 22px;
+  font-weight: var(--habli-peso-bold);
+  line-height: 1;
+  box-shadow: var(--habli-sombra-sm);
+  transition: background-color 200ms ease-out, color 200ms ease-out, transform 200ms ease-out;
+}
+.perfil-del:hover { background: var(--habli-azul-50); color: var(--habli-azul-700); transform: scale(1.1); }
+
+/* ---------- Hero de bienvenida (sin perfiles) ---------- */
+.hero-lali {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--habli-esp-6);
+  padding: var(--habli-esp-8);
+  background: var(--habli-grad-hero);
+  text-align: center;
+}
+.hero-lali img.mascota { width: min(280px, 50vw); animation: h-rebote 2.4s ease-in-out infinite; }
+.bocadillo {
+  position: relative;
+  max-width: 440px;
+  background: var(--habli-blanco);
+  border-radius: var(--habli-radio-xl);
+  box-shadow: var(--habli-sombra-md);
+  padding: var(--habli-esp-6);
+  font-size: 20px;
+  font-weight: var(--habli-peso-medium);
+  color: var(--habli-tinta-900);
+}
+.bocadillo::after {
+  content: "";
+  position: absolute;
+  top: -14px; left: 50%;
+  transform: translateX(-50%);
+  border: 14px solid transparent;
+  border-bottom-color: var(--habli-blanco);
+  border-top: none;
+}
+/* cola hacia la IZQUIERDA: cuando Lali está al lado (no encima) */
+.bocadillo--lado::after {
+  top: 50%; left: -14px;
+  transform: translateY(-50%);
+  border: 16px solid transparent;
+  border-right-color: var(--habli-blanco);
+  border-left: none;
+}
+
+/* ---------- Chat de Lali ---------- */
+.chat {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+.chat__cabecera {
+  display: flex;
+  align-items: center;
+  gap: var(--habli-esp-3);
+  padding: var(--habli-esp-3) var(--habli-esp-4);
+}
+.chat__cabecera img { width: 48px; }
+.chat__cabecera .nombre { font-family: var(--habli-fuente-titulo); font-weight: 700; color: var(--habli-tinta-900); }
+.chat__mensajes {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--habli-esp-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--habli-esp-3);
+}
+.burbuja {
+  max-width: 80%;
+  padding: var(--habli-esp-3) var(--habli-esp-4);
+  border-radius: var(--habli-radio-lg);
+  animation: h-aparece 250ms ease-out;
+}
+/* burbujas directamente sobre el fondo de la página (marca: Lali en Verde 50) */
+.burbuja--lali {
+  align-self: flex-start;
+  display: flex;
+  gap: var(--habli-esp-3);
+  background: var(--habli-verde-50);
+  border-bottom-left-radius: var(--habli-radio-sm);
+  color: var(--habli-tinta-700);
+}
+.burbuja--lali img { width: 36px; height: 36px; object-fit: contain; flex: none; align-self: flex-end; }
+.burbuja--usuario {
+  align-self: flex-end;
+  background: var(--habli-blanco);
+  border-bottom-right-radius: var(--habli-radio-sm);
+  color: var(--habli-tinta-900);
+}
+.burbuja--tarjeta {
+  align-self: stretch;
+  max-width: 100%;
+  background: var(--habli-blanco);
+  box-shadow: var(--habli-sombra-sm);
+  border-radius: var(--habli-radio-lg);
+}
+
+/* Tarjeta de resultado de la prueba (pantalla final): centrada, grande y responsiva */
+.tarjeta-resultado {
+  text-align: center;
+  padding: clamp(20px, 3.5vw, 36px);
+}
+.tarjeta-resultado h3 {
+  font-size: clamp(22px, 3.2vw, 30px);
+  margin-bottom: var(--habli-esp-4);
+}
+.tarjeta-resultado .recomendacion {
+  font-size: clamp(18px, 2.6vw, 24px);
+  font-weight: var(--habli-peso-medium);
+  color: var(--habli-tinta-700);
+  margin-bottom: var(--habli-esp-4);
+}
+.tarjeta-resultado .acciones {
+  display: flex;
+  gap: var(--habli-esp-3);
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: var(--habli-esp-6);
+}
+/* botones de la tarjeta: mismo formato, centrados y en una sola línea */
+.tarjeta-resultado .acciones .h-btn {
+  white-space: nowrap;
+  font-size: clamp(16px, 2vw, 19px);
+  min-height: clamp(52px, 6vw, 60px);
+}
+
+/* chip de riesgo grande (pantalla de resultado) */
+.h-chip--grande {
+  font-size: clamp(22px, 3.2vw, 30px);
+  padding: var(--habli-esp-3) var(--habli-esp-8);
+  border-radius: var(--habli-radio-full);
+}
+.chat__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--habli-esp-2);
+  padding: 0 var(--habli-esp-4) var(--habli-esp-2);
+}
+.chat__chips .h-chip {
+  border: none;
+  cursor: pointer;
+  min-height: 40px;
+  background: var(--habli-blanco);   /* sobre el fondo azul-50 de la página */
+  box-shadow: var(--habli-sombra-sm);
+}
+.chat__entrada {
+  display: flex;
+  gap: var(--habli-esp-2);
+  padding: var(--habli-esp-3) var(--habli-esp-4) var(--habli-esp-4);
+}
+.chat__entrada input { flex: 1; }
+.chat__entrada .h-btn { min-width: 56px; padding: 0 var(--habli-esp-4); }
+
+/* panel central del home: integrado en el fondo, sin tarjeta que lo diferencie */
+.chat-home {
+  height: calc(100vh - 120px);
+  background: transparent;
+}
+.chat-home .chat__entrada input { border: none; box-shadow: var(--habli-sombra-sm); border-radius: var(--habli-radio-full); }
+
+/* ---------- Botón flotante + panel de Lali ---------- */
+.lali-fab {
+  position: fixed;
+  right: var(--habli-esp-6);
+  bottom: var(--habli-esp-6);
+  z-index: 60;
+  width: 76px; height: 76px;
+  border: none;
+  border-radius: var(--habli-radio-full);
+  background: var(--habli-grad-marca);
+  box-shadow: var(--habli-sombra-lg);
+  padding: 8px;
+  transition: transform 200ms ease-out;
+}
+.lali-fab:hover { transform: scale(1.08); }
+.lali-fab img { width: 100%; height: 100%; object-fit: contain; }
+
+.lali-panel {
+  position: fixed;
+  right: var(--habli-esp-6);
+  bottom: 112px;
+  z-index: 59;
+  width: min(420px, calc(100vw - 32px));
+  height: min(560px, calc(100vh - 140px));
+  background: var(--habli-blanco);
+  border-radius: var(--habli-radio-lg);
+  box-shadow: var(--habli-sombra-lg);
+  overflow: hidden;
+  animation: h-aparece 250ms ease-out;
+}
+
+/* ---------- Estrellas / gamificación ---------- */
+.estrella { color: var(--habli-amarillo-500); }
+.estrellas-grande {
+  font-family: var(--habli-fuente-titulo);
+  font-size: var(--habli-fs-display);
+  font-weight: var(--habli-peso-black);
+  color: var(--habli-tinta-900);
+  display: flex;
+  align-items: center;
+  gap: var(--habli-esp-3);
+}
+.progreso-estrellas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+}
+.progreso-estrellas span { font-size: 22px; opacity: 0.25; transition: opacity 200ms ease-out, transform 200ms ease-out; }
+.progreso-estrellas span.llena { opacity: 1; animation: h-pulso 400ms ease-out; }
+
+/* ---------- Timeline del histórico ---------- */
+.timeline { display: flex; flex-direction: column; gap: var(--habli-esp-4); }
+.timeline .h-card { display: flex; align-items: center; gap: var(--habli-esp-4); flex-wrap: wrap; }
+
+/* ---------- Tarjetas de ejercicio ---------- */
+.ejercicio-card { margin-bottom: var(--habli-esp-4); }
+.ejercicio-card .fila { display: flex; align-items: center; justify-content: space-between; gap: var(--habli-esp-4); flex-wrap: wrap; }
+.nivel-chip--1 { background: var(--habli-verde-50); color: var(--habli-verde-700); }
+.nivel-chip--2 { background: var(--habli-azul-50); color: var(--habli-azul-700); }
+.nivel-chip--3 { background: var(--habli-naranja-50); color: #9C5A12; }
+
+/* ---------- Menú del perfil (Configurar / Cerrar sesión) ---------- */
+.menu-perfil-zona { position: relative; }
+.menu-perfil {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 50;
+  min-width: 200px;
+  background: var(--habli-blanco);
+  border-radius: var(--habli-radio-md);
+  box-shadow: var(--habli-sombra-lg);
+  padding: var(--habli-esp-2);
+  display: flex;
+  flex-direction: column;
+  animation: h-aparece 200ms ease-out;
+}
+.menu-perfil button {
+  display: flex;
+  align-items: center;
+  gap: var(--habli-esp-2);
+  border: none;
+  background: transparent;
+  border-radius: var(--habli-radio-sm);
+  padding: var(--habli-esp-3) var(--habli-esp-4);
+  font-family: var(--habli-fuente-texto);
+  font-size: var(--habli-fs-body);
+  font-weight: var(--habli-peso-bold);
+  color: var(--habli-tinta-700);
+  text-align: left;
+}
+.menu-perfil button:hover { background: var(--habli-azul-50); color: var(--habli-azul-700); }
+
+/* ---------- Modal sencillo ---------- */
+.modal-fondo {
+  position: fixed; inset: 0; z-index: 80;
+  background: rgba(23, 58, 77, 0.45);
+  display: flex; align-items: center; justify-content: center;
+  padding: var(--habli-esp-6);
+}
+.modal-caja { max-width: 480px; width: 100%; }

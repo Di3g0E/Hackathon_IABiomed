@@ -1,0 +1,8 @@
+Avatares de perfil de Habli.
+
+Copia aquí imágenes CUADRADAS (recomendado 256x256 o 512x512) en PNG, JPG, WEBP o SVG.
+La app las lista automáticamente (endpoint GET /avatares) y las muestra CIRCULARES en el
+selector de avatar del registro y de la configuración del perfil. No hace falta reiniciar
+el servidor: basta con recargar la página.
+
+Sugerencia de nombres: avatar-gato.png, avatar-cohete.png, etc. (el nombre no afecta).

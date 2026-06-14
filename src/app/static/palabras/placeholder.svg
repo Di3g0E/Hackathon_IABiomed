@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" role="img" aria-label="Dibujo pendiente">
+  <rect x="8" y="8" width="384" height="384" rx="48" fill="#EAF7FB"/>
+  <rect x="8" y="8" width="384" height="384" rx="48" fill="none" stroke="#C4E8F2" stroke-width="6"/>
+  <circle cx="200" cy="170" r="92" fill="#FFFFFF"/>
+  <text x="200" y="212" text-anchor="middle" font-family="Poppins, Nunito, sans-serif" font-size="120" font-weight="800" fill="#52B2CB">?</text>
+  <path d="M200 300 l14 28 31 5 -22 22 5 31 -28 -15 -28 15 5 -31 -22 -22 31 -5 z" fill="#F2C242"/>
+</svg>

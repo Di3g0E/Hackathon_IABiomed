@@ -75,15 +75,65 @@ class W2V:
         self.especiales = {"<pad>", "<s>", "</s>", "<unk>", "|", " ", ""}
 
     def reconoce(self, wav):
+        return self.reconoce_conf(wav)[0]
+
+    def _logits(self, wav):
         iv = self.fe(wav, sampling_rate=16000, return_tensors="pt").input_values.to(self.dev)
         with torch.no_grad():
-            ids = self.model(iv).logits.argmax(-1)[0].tolist()
+            return self.model(iv).logits[0]            # T×V (en el device)
+
+    def reconoce_restringido(self, wav, palabra):
+        """Decodificación RESTRINGIDA: puntúa la palabra esperada y sus realizaciones
+        clínicas (8 procesos) contra los logits -> proceso ganador + GOP por fonema.
+        Devuelve el registro de palabra (mismo formato que el flujo libre + gop/margen)."""
+        from pipeline.decodificacion import decodifica_restringido
+        return decodifica_restringido(self._logits(wav).cpu(), self.id2tok, palabra)
+
+    def reconoce_conf(self, wav):
+        """Devuelve (fonemas, confianza en [0,1]).
+
+        Confianza = media de la probabilidad máxima (softmax) en los fotogramas
+        no-blank; proxy acústico de inteligibilidad (no es una medida clínica)."""
+        iv = self.fe(wav, sampling_rate=16000, return_tensors="pt").input_values.to(self.dev)
+        with torch.no_grad():
+            logits = self.model(iv).logits[0]
+            probs = torch.softmax(logits, dim=-1)
+            ids = logits.argmax(-1).tolist()
+            maxp = probs.max(-1).values
+        pad_id = next((i for i, t in self.id2tok.items() if t == "<pad>"), None)
+        no_blank = [j for j, i in enumerate(ids) if i != pad_id]
+        conf = float(maxp[no_blank].mean()) if no_blank else float(maxp.mean())
         toks, prev = [], None
         for i in ids:
             if i != prev:
                 toks.append(i)
             prev = i
-        return [self.id2tok[i] for i in toks if self.id2tok.get(i) not in self.especiales]
+        fonemas = [self.id2tok[i] for i in toks if self.id2tok.get(i) not in self.especiales]
+        return fonemas, conf
+
+    def reconoce_alineado(self, wav):
+        """Devuelve (segmentos, duracion_s). Cada segmento es un dict
+        {tok (IPA cruda), t_ini, t_fin, conf} con el instante de cada fonema."""
+        iv = self.fe(wav, sampling_rate=16000, return_tensors="pt").input_values.to(self.dev)
+        with torch.no_grad():
+            logits = self.model(iv).logits[0]
+            probs = torch.softmax(logits, dim=-1)
+            ids = logits.argmax(-1).tolist()
+            maxp = probs.max(-1).values.tolist()
+        dur = len(wav) / 16000.0
+        fdur = dur / len(ids) if ids else 0.0          # ~0.02 s por fotograma
+        segs, j = [], 0
+        while j < len(ids):
+            i = ids[j]; k = j
+            while k < len(ids) and ids[k] == i:
+                k += 1
+            tok = self.id2tok.get(i)
+            if tok not in self.especiales:
+                segs.append({"tok": tok, "t_ini": round(j * fdur, 3),
+                             "t_fin": round(k * fdur, 3),
+                             "conf": round(sum(maxp[j:k]) / (k - j), 3)})
+            j = k
+        return segs, dur
 
 
 class Allo:

@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Habli — Jugamos, hablamos y aprendemos</title>
+  <link rel="icon" type="image/png" href="/static/brand/habli-icono.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/brand/habli-tokens.css">
+  <link rel="stylesheet" href="/static/css/base.css">
+  <link rel="stylesheet" href="/static/css/componentes.css">
+  <link rel="stylesheet" href="/static/css/nino.css">
+</head>
+<body>
+  <main id="vista" aria-live="polite"></main>
+
+  <!-- Botón flotante de Lali: abre el chat en cualquier pantalla -->
+  <button id="lali-fab" class="lali-fab oculto" type="button" aria-label="Hablar con Lali">
+    <img src="/static/brand/lali-mascota.png" alt="">
+  </button>
+  <aside id="lali-panel" class="lali-panel oculto" aria-label="Chat con Lali"></aside>
+
+  <script type="module" src="/static/js/main.js"></script>
+</body>
+</html>

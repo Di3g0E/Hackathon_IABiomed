@@ -1,0 +1,33 @@
+error,nombre,edad,etiqueta_doc,nivel
+reduccion_grupos,Reducción de grupos consonánticos,3,Normal,normal
+reduccion_grupos,Reducción de grupos consonánticos,4,Normal,normal
+reduccion_grupos,Reducción de grupos consonánticos,5,Alerta leve,alerta
+reduccion_grupos,Reducción de grupos consonánticos,6,Alerta,alerta
+sustitucion_r_l,Sustitución r→l,3,Normal,normal
+sustitucion_r_l,Sustitución r→l,4,Frecuente,normal
+sustitucion_r_l,Sustitución r→l,5,Alerta leve,alerta
+sustitucion_r_l,Sustitución r→l,6,Alerta,alerta
+errores_rr,Errores en rr,3,Normal,normal
+errores_rr,Errores en rr,4,Frecuente,normal
+errores_rr,Errores en rr,5,Ocasional,vigilar
+errores_rr,Errores en rr,6,Alerta,alerta
+omision_silabas,Omisión de sílabas,3,Normal,normal
+omision_silabas,Omisión de sílabas,4,Ocasional,vigilar
+omision_silabas,Omisión de sílabas,5,Alerta,alerta
+omision_silabas,Omisión de sílabas,6,Alerta,alerta
+oclusivizacion,Oclusivización,3,Frecuente,normal
+oclusivizacion,Oclusivización,4,Disminuye,vigilar
+oclusivizacion,Oclusivización,5,Alerta,alerta
+oclusivizacion,Oclusivización,6,Alerta,alerta
+simplificacion_diptongos,Simplificación de diptongos,3,Frecuente,normal
+simplificacion_diptongos,Simplificación de diptongos,4,Ocasional,vigilar
+simplificacion_diptongos,Simplificación de diptongos,5,Alerta,alerta
+simplificacion_diptongos,Simplificación de diptongos,6,Alerta,alerta
+omision_consonantes_finales,Omisión de consonantes finales,3,Frecuente,normal
+omision_consonantes_finales,Omisión de consonantes finales,4,Ocasional,vigilar
+omision_consonantes_finales,Omisión de consonantes finales,5,Alerta,alerta
+omision_consonantes_finales,Omisión de consonantes finales,6,Alerta,alerta
+asimilaciones,Asimilaciones,3,Frecuente,normal
+asimilaciones,Asimilaciones,4,Disminuye,vigilar
+asimilaciones,Asimilaciones,5,Raras,vigilar
+asimilaciones,Asimilaciones,6,Patológicas,alerta

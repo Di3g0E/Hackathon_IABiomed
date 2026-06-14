@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Informe de cribado fonológico — Habli</title>
+<!--
+  Plantilla Jinja2 del informe clínico de Habli (modo clínico / logopeda).
+  Identidad: sistema de marca Habli (docs/habli-brand.skill) — azul como único
+  acento, sin Lali, Poppins en títulos/cifras y Nunito en cuerpo.
+
+  Contexto esperado (mismo dict que app.informe_pdf.generar_pdf):
+    { alias, edad, fecha, encuadre, screening, pruebas[], evolucion, ejercicios,
+      logo_src (opcional: ruta o data-URI del logo oficial) }
+
+  Render a PDF: Jinja2 + navegador (Chromium headless / Playwright) o WeasyPrint.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  /* ============ Tokens Habli (assets/tokens/habli-tokens.css) ============ */
+  :root {
+    --habli-azul-700: #2C7186;
+    --habli-azul-500: #52B2CB;
+    --habli-azul-200: #C4E8F2;
+    --habli-azul-50:  #EAF7FB;
+    --habli-verde-500: #66B43F;
+    --habli-verde-50:  #EFF8E4;
+    --habli-tinta-900: #173A4D;
+    --habli-tinta-700: #2C5566;
+    --habli-gris-500:  #5E7785;
+    --habli-gris-400:  #93A7B2;
+    --habli-gris-200:  #D9E3E8;
+    --habli-gris-100:  #EFF4F6;
+    --habli-fondo:     #F6FAFB;
+    --habli-blanco:    #FFFFFF;
+    --habli-riesgo-bajo:  #66B43F;
+    --habli-riesgo-medio: #EF9A30;
+    --habli-riesgo-alto:  #E5705A;
+    --habli-fuente-titulo: "Poppins", "Nunito", "Trebuchet MS", sans-serif;
+    --habli-fuente-texto:  "Nunito", "Poppins", system-ui, sans-serif;
+    --habli-radio-sm: 10px;
+    --habli-radio-md: 16px;
+    --habli-sombra-sm: 0 2px 6px rgba(23, 58, 77, 0.06);
+  }
+
+  /* ============ Página / impresión ============ */
+  @page { size: A4; margin: 16mm 15mm 12mm 15mm; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--habli-fuente-texto);
+    font-size: 10.5pt;
+    line-height: 1.35;
+    color: var(--habli-tinta-700);
+    background: var(--habli-blanco);
+  }
+  @media screen {
+    body { background: var(--habli-fondo); }
+    .hoja {
+      max-width: 186mm; margin: 24px auto; padding: 16mm 15mm 20mm;
+      background: var(--habli-blanco); border-radius: var(--habli-radio-md);
+      box-shadow: 0 8px 24px rgba(23, 58, 77, 0.08);
+    }
+  }
+  @media print {
+    .hoja { padding: 0; }
+    .no-romper { break-inside: avoid; }
+    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    /* Pie legal en TODAS las hojas: position:fixed se repite en cada página
+       impresa (Chromium) y el tfoot espaciador reserva su hueco al final de
+       cada página para que el contenido nunca lo pise. */
+    footer.pie {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      margin: 0; padding-top: 6px; background: var(--habli-blanco);
+    }
+    .pie-espaciador td { height: 15mm; padding: 0; border: none; }
+  }
+  @media screen {
+    .pie-espaciador { display: none; }
+  }
+
+  /* Tabla estructural (contenido + espaciador del pie); sin estilo visual. */
+  table.doc-tabla { width: 100%; border-collapse: collapse; }
+  table.doc-tabla > tbody > tr > td { padding: 0; }
+
+  /* ============ Cabecera ============ */
+  header.cabecera {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    padding-bottom: 12px; margin-bottom: 14px;
+    border-bottom: 2.5px solid var(--habli-azul-500);
+  }
+  .cabecera img.logo { height: 52px; width: auto; }
+  .cabecera .titulo { text-align: right; }
+  .cabecera h1 {
+    font-family: var(--habli-fuente-titulo); font-weight: 600;
+    font-size: 17pt; line-height: 1.2; color: var(--habli-tinta-900); margin: 0;
+  }
+  .cabecera .fecha {
+    font-size: 9pt; color: var(--habli-gris-400); margin-top: 3px;
+  }
+
+  /* ============ Ficha del paciente ============ */
+  .ficha {
+    display: flex; gap: 0; border: 1px solid var(--habli-gris-200);
+    border-radius: var(--habli-radio-sm); overflow: hidden; margin-bottom: 14px;
+  }
+  .ficha .campo { flex: 1; padding: 8px 14px; background: var(--habli-gris-100); }
+  .ficha .campo + .campo { border-left: 1px solid var(--habli-gris-200); }
+  .ficha .etiqueta {
+    font-size: 7.5pt; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.06em; color: var(--habli-gris-400);
+  }
+  .ficha .valor {
+    font-family: var(--habli-fuente-titulo); font-weight: 600;
+    font-size: 11.5pt; color: var(--habli-tinta-900);
+  }
+
+  /* ============ Encuadre (cribado, no diagnóstico) ============ */
+  .encuadre {
+    background: var(--habli-azul-50); border-left: 3px solid var(--habli-azul-700);
+    border-radius: 0 var(--habli-radio-sm) var(--habli-radio-sm) 0;
+    padding: 9px 14px; margin-bottom: 16px;
+    font-size: 9.5pt; color: var(--habli-tinta-700);
+  }
+  .encuadre strong { color: var(--habli-azul-700); }
+
+  /* ============ Secciones ============ */
+  h2.seccion {
+    font-family: var(--habli-fuente-titulo); font-weight: 600;
+    font-size: 12.5pt; color: var(--habli-tinta-900);
+    margin: 18px 0 8px; padding-bottom: 4px;
+    border-bottom: 1px solid var(--habli-gris-200);
+  }
+  h2.seccion::before {
+    content: ""; display: inline-block; width: 18px; height: 4px;
+    border-radius: 2px; background: var(--habli-azul-500);
+    margin-right: 8px; vertical-align: 3px;
+  }
+  h3.subseccion {
+    font-family: var(--habli-fuente-texto); font-weight: 700;
+    font-size: 10.5pt; color: var(--habli-tinta-900); margin: 12px 0 6px;
+  }
+
+  /* ============ Chips de riesgo (siempre con texto) ============ */
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: var(--habli-fuente-texto); font-weight: 700; font-size: 9.5pt;
+    padding: 3px 12px 3px 9px; border-radius: 999px; white-space: nowrap;
+  }
+  .chip .punto { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+  .chip.riesgo-bajo  { background: var(--habli-verde-50); color: #3E7A2A; }
+  .chip.riesgo-bajo .punto  { background: var(--habli-riesgo-bajo); }
+  .chip.riesgo-medio { background: #FCF0DC; color: #9A5A12; }
+  .chip.riesgo-medio .punto { background: var(--habli-riesgo-medio); }
+  .chip.riesgo-alto  { background: #FBEAE7; color: #A8442F; }
+  .chip.riesgo-alto .punto  { background: var(--habli-riesgo-alto); }
+
+  .linea-riesgo {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    margin: 6px 0 10px;
+  }
+  .linea-riesgo .recomendacion { font-size: 9.5pt; color: var(--habli-gris-500); }
+
+  /* ============ Cifras clave (KPI) ============ */
+  .kpis {
+    display: flex; gap: 8px; margin: 8px 0 12px;
+  }
+  .kpi {
+    flex: 1; border: 1px solid var(--habli-gris-200);
+    border-radius: var(--habli-radio-sm); padding: 8px 10px 7px;
+    background: var(--habli-blanco);
+  }
+  .kpi .cifra {
+    font-family: var(--habli-fuente-titulo); font-weight: 700;
+    font-size: 16pt; line-height: 1.1; color: var(--habli-azul-700);
+  }
+  .kpi .cifra small { font-size: 9pt; font-weight: 600; color: var(--habli-gris-500); }
+  .kpi .nombre { font-size: 8pt; font-weight: 600; color: var(--habli-gris-500); margin-top: 2px; }
+
+  /* ============ Tablas de datos ============ */
+  table.datos { width: 100%; border-collapse: collapse; margin: 6px 0 12px; font-size: 9.5pt; }
+  .datos thead th {
+    font-family: var(--habli-fuente-texto); font-weight: 700;
+    color: var(--habli-tinta-900); background: var(--habli-gris-100);
+    text-align: left; padding: 6px 10px;
+    border-bottom: 1.5px solid var(--habli-azul-500);
+  }
+  .datos tbody td {
+    padding: 5px 10px; border-bottom: 1px solid var(--habli-gris-200);
+    color: var(--habli-tinta-700); vertical-align: top;
+  }
+  .datos tbody tr:nth-child(even) td { background: var(--habli-gris-100); }
+  .datos td.num, .datos th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .datos td .sev { font-size: 8.5pt; color: var(--habli-gris-500); }
+
+  /* ============ Avisos y callouts ============ */
+  .callout-atipico {
+    background: #FBEAE7; border-left: 3px solid var(--habli-riesgo-alto);
+    border-radius: 0 var(--habli-radio-sm) var(--habli-radio-sm) 0;
+    padding: 7px 12px; margin: 8px 0; font-size: 9.5pt; color: #A8442F;
+  }
+  .aviso {
+    font-size: 9pt; color: var(--habli-gris-500); margin: 4px 0;
+    padding-left: 12px; position: relative;
+  }
+  .aviso::before { content: "▸"; position: absolute; left: 0; color: var(--habli-azul-500); }
+
+  /* Lista de respuestas del cuestionario */
+  ul.lista-datos { margin: 4px 0 8px; padding-left: 0; list-style: none; }
+  ul.lista-datos li {
+    font-size: 9.5pt; color: var(--habli-tinta-700); padding: 3px 0 3px 18px;
+    position: relative; border-bottom: 1px solid var(--habli-gris-100);
+  }
+  ul.lista-datos li::before {
+    content: "✓"; position: absolute; left: 0; color: var(--habli-azul-500); font-weight: 700;
+  }
+
+  /* ============ Evolución ============ */
+  .delta-tabla td.delta-mejor { color: #3E7A2A; font-weight: 700; }
+  .delta-tabla td.delta-peor  { color: #A8442F; font-weight: 700; }
+
+  /* ============ Ejercicios ============ */
+  .ejercicio {
+    border: 1px solid var(--habli-gris-200); border-radius: var(--habli-radio-sm);
+    padding: 8px 12px; margin: 6px 0; background: var(--habli-blanco);
+  }
+  .ejercicio .cab { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .ejercicio .titulo-ej { font-weight: 700; color: var(--habli-tinta-900); font-size: 10pt; }
+  .ejercicio .proceso-ej {
+    font-size: 8pt; font-weight: 700; color: var(--habli-azul-700);
+    background: var(--habli-azul-50); border-radius: 999px; padding: 2px 9px;
+    white-space: nowrap;
+  }
+  .ejercicio .actividad-ej { font-size: 9.5pt; color: var(--habli-gris-500); margin-top: 3px; }
+  .nota { font-size: 8.5pt; color: var(--habli-gris-400); margin-top: 8px; }
+
+  /* ============ Firma ============ */
+  .firma {
+    display: flex; gap: 24px; margin-top: 20px; break-inside: avoid;
+  }
+  .firma .bloque { flex: 1; }
+  .firma .linea {
+    border-bottom: 1px solid var(--habli-gris-400); height: 44px; margin-bottom: 4px;
+  }
+  .firma .rotulo { font-size: 8.5pt; color: var(--habli-gris-400); }
+
+  /* ============ Pie legal ============ */
+  footer.pie {
+    margin-top: 14px; padding-top: 8px; break-inside: avoid;
+    border-top: 1px solid var(--habli-gris-200);
+    font-size: 8pt; color: var(--habli-gris-400); text-align: center;
+  }
+</style>
+</head>
+<body>
+<div class="hoja">
+<table class="doc-tabla">
+  <!-- El tfoot se repite al final de CADA página impresa y reserva el hueco
+       del pie legal fijo. No es visible en pantalla. -->
+  <tfoot class="pie-espaciador"><tr><td></td></tr></tfoot>
+  <tbody><tr><td>
+
+  <!-- ===================== Cabecera ===================== -->
+  <header class="cabecera">
+    <img class="logo" src="{{ logo_src | default('../static/brand/habli-logo.png') }}" alt="Habli">
+    <div class="titulo">
+      <h1>Informe de cribado fonológico</h1>
+      <div class="fecha">{{ fecha | default('') }}</div>
+    </div>
+  </header>
+
+  <!-- ===================== Ficha del paciente ===================== -->
+  <div class="ficha no-romper">
+    <div class="campo">
+      <div class="etiqueta">Niño/a</div>
+      <div class="valor">{{ alias | default('—') }}</div>
+    </div>
+    <div class="campo">
+      <div class="etiqueta">Edad</div>
+      <div class="valor">{{ edad | default('—') }} años</div>
+    </div>
+    <div class="campo">
+      <div class="etiqueta">Pruebas realizadas</div>
+      <div class="valor">{{ pruebas | default([]) | length }}</div>
+    </div>
+    <div class="campo">
+      <div class="etiqueta">Herramienta</div>
+      <div class="valor">Habli · cribado TDL</div>
+    </div>
+  </div>
+
+  <!-- ===================== Encuadre ===================== -->
+  <div class="encuadre no-romper">
+    <strong>Cribado, no diagnóstico.</strong>
+    {{ encuadre | default('Esta herramienta orienta un cribado del habla; NO es un diagnóstico.
+    Un resultado de aviso recomienda una valoración profesional, no confirma un trastorno.
+    El diagnóstico lo firma el/la logopeda.') }}
+  </div>
+
+  <!-- ===================== Cuestionario inicial (familia) ===================== -->
+  {% if screening %}
+  <section class="no-romper">
+    <h2 class="seccion">Cuestionario inicial (familia)</h2>
+    <div class="linea-riesgo">
+      <span class="chip riesgo-{{ screening.riesgo_preliminar | default('bajo') }}">
+        <span class="punto"></span>
+        Triaje preliminar: {{ screening.riesgo_preliminar | default('—') | upper }}
+      </span>
+      <span class="recomendacion">{{ screening.banderas | default([]) | length }} señal(es) reportada(s) por la familia</span>
+    </div>
+    {% if screening.banderas %}
+    <h3 class="subseccion">Señales indicadas por la familia</h3>
+    <ul class="lista-datos">
+      {% for b in screening.banderas %}<li>{{ b }}</li>{% endfor %}
+    </ul>
+    {% endif %}
+    {% if screening.factores_equidad %}
+    <p class="aviso">Factores a tener en cuenta (pueden explicar parte de las dificultades):
+      {{ screening.factores_equidad | join('; ') }}.</p>
+    {% endif %}
+    {% if screening.nota %}<p class="nota">{{ screening.nota }}</p>{% endif %}
+  </section>
+  {% endif %}
+
+  <!-- ===================== Pruebas de audio ===================== -->
+  {% for prueba in pruebas | default([]) %}
+  {% set rr = prueba.resumen | default({}) %}
+  {% set ac = prueba.analisis | default({}) %}
+  <section>
+    <h2 class="seccion">
+      Prueba {{ prueba.n_prueba | default(loop.index) }}{% if prueba.ts %} — {{ prueba.ts[:10] }}{% endif %}
+    </h2>
+
+    <div class="linea-riesgo no-romper">
+      <span class="chip riesgo-{{ rr.riesgo | default('bajo') }}">
+        <span class="punto"></span>
+        Riesgo {{ rr.riesgo | default('—') | upper }}
+      </span>
+      {% if rr.recomendacion %}<span class="recomendacion">{{ rr.recomendacion }}</span>{% endif %}
+    </div>
+
+    <div class="kpis no-romper">
+      <div class="kpi">
+        <div class="cifra">{{ rr.n_errores_impropios | default(0) }}</div>
+        <div class="nombre">Errores impropios para la edad</div>
+      </div>
+      <div class="kpi">
+        <div class="cifra">{{ rr.palabras_correctas | default(0) }}</div>
+        <div class="nombre">Palabras correctas</div>
+      </div>
+      <div class="kpi">
+        <div class="cifra">{{ "%.0f" | format((rr.inteligibilidad_media | default(0)) * 100) }}<small> %</small></div>
+        <div class="nombre">Inteligibilidad media</div>
+      </div>
+      <div class="kpi">
+        <div class="cifra">{{ ac.pcc_medio | default('—') }}<small> %</small></div>
+        <div class="nombre">PCC medio · severidad: {{ ac.severidad_pcc | default('—') }}</div>
+      </div>
+    </div>
+
+    {% if ac.procesos_atipicos %}
+    <div class="callout-atipico no-romper">
+      <strong>Procesos atípicos (mayor relevancia clínica):</strong>
+      {{ ac.procesos_atipicos | join(', ') }}.
+    </div>
+    {% endif %}
+
+    {% if rr.errores_por_tipo %}
+    <h3 class="subseccion">Procesos fonológicos detectados</h3>
+    <table class="datos no-romper">
+      <thead><tr><th>Proceso</th><th class="num">Ocurrencias</th></tr></thead>
+      <tbody>
+        {% for proceso, n in rr.errores_por_tipo.items() %}
+        <tr><td>{{ proceso }}</td><td class="num">{{ n }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+
+    {% if ac.pcc_por_grupo %}
+    <h3 class="subseccion">PCC por grupo de error</h3>
+    <table class="datos no-romper">
+      <thead><tr><th>Proceso</th><th class="num">PCC</th><th>Severidad</th><th class="num">Nº palabras</th></tr></thead>
+      <tbody>
+        {% for g in ac.pcc_por_grupo %}
+        <tr>
+          <td>{{ g.proceso }}</td>
+          <td class="num">{{ g.pcc }} %</td>
+          <td>{{ g.severidad }}</td>
+          <td class="num">{{ g.n_palabras }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+
+    {% if ac.severidad_por_palabra %}
+    <h3 class="subseccion">Palabras con menor PCC</h3>
+    <table class="datos no-romper">
+      <thead><tr><th>Palabra</th><th class="num">PCC</th><th>Severidad</th></tr></thead>
+      <tbody>
+        {% for w in (ac.severidad_por_palabra | sort(attribute='pcc'))[:10] %}
+        <tr><td>{{ w.palabra }}</td><td class="num">{{ w.pcc }} %</td><td><span class="sev">{{ w.severidad }}</span></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+
+    {% if prueba.persistencia and prueba.persistencia.procesos %}
+    {% set pr = prueba.persistencia.procesos %}
+    <p class="aviso"><strong>Persistencia vs. histórico</strong> — persistentes:
+      {{ pr.persistentes | default([]) | join(', ') or '—' }} · nuevos:
+      {{ pr.nuevos | default([]) | join(', ') or '—' }} · resueltos:
+      {{ pr.resueltos | default([]) | join(', ') or '—' }}.</p>
+    {% endif %}
+
+    {% if prueba.repeticion %}
+    <p class="aviso"><strong>Ronda extra de repetición</strong> — corregidos:
+      {{ prueba.repeticion.procesos_corregidos | default([]) | join(', ') or '—' }} · confirmados:
+      {{ prueba.repeticion.procesos_confirmados | default([]) | join(', ') or '—' }}.</p>
+    {% endif %}
+
+    {% for aviso in prueba.avisos | default([]) %}
+    <p class="aviso">{{ aviso }}</p>
+    {% endfor %}
+
+    {% if prueba.ejercicios and prueba.ejercicios.ejercicios %}
+    <h3 class="subseccion">Ejercicios de estimulación propuestos tras esta prueba</h3>
+    {% if prueba.ejercicios.plazo %}
+    <p class="aviso">Repetir la prueba recomendada en <strong>{{ prueba.ejercicios.plazo }}</strong>{% if prueba.ejercicios.fecha_retest %} (≈ {{ prueba.ejercicios.fecha_retest }}){% endif %}.</p>
+    {% endif %}
+    {% for a in prueba.ejercicios.ejercicios %}
+    <div class="ejercicio no-romper">
+      <div class="cab">
+        <span class="titulo-ej">{{ a.titulo }}</span>
+        <span class="proceso-ej">Nivel {{ a.nivel }}{% if a.proceso and a.nivel == 3 %} · {{ a.proceso }}{% endif %}</span>
+      </div>
+      <div class="actividad-ej">{{ a.actividad }}</div>
+    </div>
+    {% endfor %}
+    {% endif %}
+  </section>
+  {% endfor %}
+
+  <!-- ===================== Evolución entre pruebas ===================== -->
+  {# Trayectoria con TODAS las pruebas (una columna por prueba) + cambio global 1ª→última #}
+  {% if evolucion and (evolucion.pruebas | default([]) | length) >= 2 %}
+  {% set ps = evolucion.pruebas %}
+  {% set d = evolucion.delta | default({}) %}
+  <section class="no-romper">
+    <h2 class="seccion">Evolución entre pruebas</h2>
+    <table class="datos delta-tabla">
+      <thead>
+        <tr>
+          <th>Indicador</th>
+          {% for p in ps %}
+          <th class="num">Prueba {{ p.n_prueba | default(loop.index) }}{% if p.ts %}<br>
+            <span style="font-weight:400;color:var(--habli-gris-400)">{{ p.ts[:10] }}</span>{% endif %}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Riesgo</td>
+          {% for p in ps %}<td class="num">{{ p.riesgo | default('—') | upper }}</td>{% endfor %}</tr>
+        <tr><td>Errores impropios</td>
+          {% for p in ps %}<td class="num">{{ p.n_errores_impropios | default('—') }}</td>{% endfor %}</tr>
+        <tr><td>Palabras correctas</td>
+          {% for p in ps %}<td class="num">{{ p.palabras_correctas | default('—') }}</td>{% endfor %}</tr>
+        <tr><td>Inteligibilidad</td>
+          {% for p in ps %}<td class="num">{% if p.inteligibilidad_media is not none %}{{ "%.0f" | format(p.inteligibilidad_media * 100) }} %{% else %}—{% endif %}</td>{% endfor %}</tr>
+        <tr><td>PCC medio</td>
+          {% for p in ps %}<td class="num">{% if p.pcc_medio is not none %}{{ p.pcc_medio }} %{% else %}—{% endif %}</td>{% endfor %}</tr>
+      </tbody>
+    </table>
+    <p class="aviso"><strong>Cambio global (1ª → última prueba):</strong>
+      riesgo {{ d.riesgo | default('—') }};
+      errores impropios {{ d.n_errores_impropios | default('—') }};
+      palabras correctas {{ d.palabras_correctas | default('—') }};
+      PCC medio {{ d.pcc_medio | default('—') }}.
+      {% if evolucion.dias_entre_pruebas %}{{ evolucion.dias_entre_pruebas }} días entre la 1ª y la última prueba;{% endif %}
+      {{ evolucion.n_ejercicios_entre_pruebas | default(0) }} ejercicio(s) de estimulación realizados en ese periodo.</p>
+  </section>
+  {% endif %}
+
+  <!-- Los ejercicios propuestos se muestran dentro de cada prueba (uno por prueba). -->
+
+  <!-- ===================== Valoración y firma del logopeda ===================== -->
+  <section class="firma">
+    <div class="bloque">
+      <div class="linea"></div>
+      <div class="rotulo">Valoración del/de la logopeda</div>
+    </div>
+    <div class="bloque">
+      <div class="linea"></div>
+      <div class="rotulo">Firma y nº de colegiado/a · Fecha</div>
+    </div>
+  </section>
+
+  </td></tr></tbody>
+</table>
+
+  <!-- ===================== Pie legal (todas las hojas al imprimir) ===================== -->
+  <footer class="pie">
+    © {{ anio | default('2026') }} Habli · Proyecto Blue Route. Cribado, no diagnóstico.
+    El resultado orienta una valoración profesional; el diagnóstico corresponde al/a la logopeda.
+  </footer>
+
+</div>
+</body>
+</html>

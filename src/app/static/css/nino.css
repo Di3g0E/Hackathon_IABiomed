@@ -1,0 +1,152 @@
+/* ============================================================
+   HABLI · Modo niño (3-6 años) — la prueba de palabras.
+   Tipografía un paso más grande, una sola acción por pantalla,
+   fondo monocromo que cambia a VERDE cuando toca hablar.
+   ============================================================ */
+
+body.modo-nino { font-size: 19px; }
+body.modo-nino h1 { font-size: 34px; }
+
+/* fases del fondo durante la prueba (transición suave de 250ms en body) */
+body.fase-verde { background: var(--habli-verde-400); }
+body.fase-celebracion { background: var(--habli-verde-50); }
+
+.prueba {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--habli-esp-6);
+  padding: var(--habli-esp-6);
+  text-align: center;
+}
+
+.prueba__salir {
+  position: fixed;
+  top: var(--habli-esp-4);
+  left: var(--habli-esp-4);
+  z-index: 10;
+}
+
+.prueba__progreso { min-height: 32px; }
+
+/* tarjeta de la palabra */
+.palabra-card {
+  background: var(--habli-blanco);
+  border-radius: var(--habli-radio-xl);
+  box-shadow: var(--habli-sombra-lg);
+  padding: var(--habli-esp-8);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--habli-esp-4);
+  max-width: 560px;
+  width: 100%;
+}
+.palabra-card img.dibujo {
+  width: min(46vh, 360px);
+  height: min(46vh, 360px);
+  object-fit: contain;
+}
+.palabra-card .palabra-texto {
+  font-family: var(--habli-fuente-titulo);
+  font-size: clamp(34px, 7vw, 56px);
+  font-weight: var(--habli-peso-black);
+  color: var(--habli-tinta-900);
+  letter-spacing: 0.01em;
+  max-width: 100%;
+  overflow-wrap: break-word;   /* palabras largas (chaqueta, estrella) nunca se salen */
+  text-align: center;
+  line-height: 1.05;
+}
+/* Nivel 2: solo la palabra escrita (sin dibujo), más grande y centrada */
+.palabra-card--texto { min-height: 46vh; justify-content: center; }
+.palabra-card .palabra-texto--grande { font-size: clamp(40px, 9vw, 88px); }
+
+.btn-altavoz {
+  width: 76px; height: 76px;
+  border: none;
+  border-radius: var(--habli-radio-full);
+  background: var(--habli-azul-500);
+  color: var(--habli-blanco);
+  font-size: 34px;
+  box-shadow: var(--habli-sombra-md);
+  transition: transform 200ms ease-out, background-color 200ms ease-out;
+}
+.btn-altavoz:hover { background: var(--habli-azul-600); transform: scale(1.08); }
+
+/* aviso "¡Ahora tú!" sobre fondo verde */
+.cue-hablar {
+  font-family: var(--habli-fuente-titulo);
+  font-size: clamp(36px, 7vw, 56px);
+  font-weight: var(--habli-peso-black);
+  color: var(--habli-tinta-900);
+  display: flex;
+  align-items: center;
+  gap: var(--habli-esp-4);
+}
+.cue-hablar .mic { font-size: 1.2em; animation: h-pulso 900ms ease-in-out infinite; }
+
+/* anillo de progreso de grabación */
+.anillo {
+  width: 120px; height: 120px;
+  border-radius: var(--habli-radio-full);
+  display: flex; align-items: center; justify-content: center;
+  background: conic-gradient(var(--habli-blanco) calc(var(--p, 0) * 1%), rgba(255,255,255,0.35) 0);
+  transition: background 120ms linear;
+}
+.anillo .interior {
+  width: 96px; height: 96px;
+  border-radius: var(--habli-radio-full);
+  background: var(--habli-verde-500);
+  color: var(--habli-blanco);
+  font-size: 44px;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* Lali pequeña que acompaña */
+.lali-mini { width: 110px; }
+.lali-mini.anima { animation: h-rebote 1.6s ease-in-out infinite; }
+
+/* selector de nivel */
+.niveles {
+  display: flex;
+  gap: var(--habli-esp-6);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.nivel-card {
+  width: min(340px, 88vw);
+  border: none;
+  border-radius: var(--habli-radio-xl);
+  background: var(--habli-blanco);
+  box-shadow: var(--habli-sombra-md);
+  padding: var(--habli-esp-8) var(--habli-esp-6);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--habli-esp-3);
+  transition: transform 200ms ease-out, box-shadow 200ms ease-out;
+}
+.nivel-card:hover { transform: scale(1.04); box-shadow: var(--habli-sombra-lg); }
+.nivel-card .emoji { font-size: 64px; }
+.nivel-card .titulo {
+  font-family: var(--habli-fuente-titulo);
+  font-size: 26px;
+  font-weight: var(--habli-peso-bold);
+  color: var(--habli-tinta-900);
+}
+.nivel-card .pista { color: var(--habli-gris-500); font-size: var(--habli-fs-body); }
+
+/* celebración */
+.celebracion h1 { font-size: clamp(36px, 7vw, 52px); }
+.celebracion img.mascota { width: min(300px, 55vw); animation: h-rebote 1.8s ease-in-out infinite; }
+.estrella-cae {
+  position: fixed;
+  top: -40px;
+  font-size: 30px;
+  z-index: 5;
+  animation: h-estrella-cae 2.6s linear forwards;
+  pointer-events: none;
+}

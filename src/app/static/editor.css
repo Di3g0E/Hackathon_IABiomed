@@ -1,0 +1,37 @@
+:root{
+  --slate:#1e293b; --gris:#64748b; --linea:#e2e8f0; --azul:#3b82f6;
+  --verde:#22c55e; --ambar:#eab308; --rojo:#ef4444; --fondo:#f8fafc;
+}
+*{box-sizing:border-box}
+body{font-family:system-ui,-apple-system,Segoe UI,Arial,sans-serif;color:var(--slate);
+  max-width:980px;margin:0 auto;padding:1.2em;background:#fff}
+h1{font-size:1.5rem;margin:.2em 0}
+.sub{color:var(--gris);margin:.2em 0 1em}
+.barra{position:sticky;top:0;z-index:5;background:#fff;border-bottom:1px solid var(--linea);
+  padding:.6em 0;display:flex;align-items:center;gap:1em;flex-wrap:wrap}
+.badge{padding:.35em .8em;border-radius:999px;color:#fff;font-weight:700;font-size:.95rem}
+.badge.bajo{background:var(--verde)} .badge.medio{background:var(--ambar)} .badge.alto{background:var(--rojo)}
+.meta{color:var(--gris);font-size:.9rem}
+button{font:inherit;border:0;border-radius:8px;padding:.5em .9em;cursor:pointer;background:#eef2f7;color:var(--slate)}
+button.primario{background:var(--azul);color:#fff}
+button:hover{filter:brightness(.96)}
+.word{border:1px solid var(--linea);border-radius:12px;padding:1em 1.1em;margin:1em 0}
+.word h3{margin:.1em 0;font-size:1.15rem}
+.word h3 small{color:var(--gris);font-weight:400;font-size:.85rem}
+.fonemas{font-family:ui-monospace,Consolas,monospace;background:var(--fondo);
+  border:1px solid var(--linea);border-radius:6px;padding:1px 6px}
+audio{width:100%;margin:.5em 0}
+canvas{width:100%;height:120px;display:block;background:var(--fondo);
+  border:1px solid var(--linea);border-radius:8px;cursor:ew-resize;touch-action:none}
+.chips{display:flex;flex-wrap:wrap;gap:.35em;align-items:center;margin:.7em 0}
+.chip{display:inline-flex;align-items:center;gap:.25em;background:#eef4ff;border:1px solid #cfe0ff;
+  border-radius:8px;padding:.15em .3em .15em .5em}
+.chip input{width:2.4em;border:0;background:transparent;font:inherit;text-align:center;
+  font-family:ui-monospace,Consolas,monospace;color:#1d4ed8;font-weight:700}
+.chip .x{cursor:pointer;color:var(--rojo);font-weight:700;padding:0 .25em}
+.ins{cursor:pointer;color:var(--azul);font-weight:700;padding:0 .15em;user-select:none}
+.eventos{font-size:.9rem;margin:.4em 0}
+.ok{color:var(--verde)} .err{color:var(--rojo)}
+.nota{color:var(--gris);font-size:.82rem;margin-top:.4em}
+.aviso{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:8px;
+  padding:.5em .8em;margin:.6em 0;font-size:.9rem;display:none}

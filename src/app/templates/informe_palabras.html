@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Detalle por palabra — Habli</title>
+<!--
+  Informe PALABRA A PALABRA para el especialista (modo clínico, sin Lali). Por cada
+  palabra: reproductor de audio (embebido), forma de onda, y la LÍNEA DE TIEMPO de las
+  letras (fonemas) detectadas con su instante de inicio/fin y confianza. Marca Habli:
+  azul como único acento, Poppins en títulos/cifras y Nunito en cuerpo.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --habli-azul-700: #2C7186; --habli-azul-600: #3F92AC; --habli-azul-500: #52B2CB;
+    --habli-azul-200: #C4E8F2; --habli-azul-50: #EAF7FB;
+    --habli-verde-500: #66B43F; --habli-verde-50: #EFF8E4;
+    --habli-tinta-900: #173A4D; --habli-tinta-700: #2C5566;
+    --habli-gris-500: #5E7785; --habli-gris-400: #93A7B2; --habli-gris-200: #D9E3E8;
+    --habli-gris-100: #EFF4F6; --habli-fondo: #F6FAFB; --habli-blanco: #FFFFFF;
+    --habli-riesgo-bajo: #66B43F; --habli-riesgo-medio: #EF9A30; --habli-riesgo-alto: #E5705A;
+    --habli-fuente-titulo: "Poppins", "Nunito", "Trebuchet MS", sans-serif;
+    --habli-fuente-texto: "Nunito", "Poppins", system-ui, sans-serif;
+    --habli-radio-sm: 10px; --habli-radio-md: 16px;
+    --habli-sombra-sm: 0 2px 6px rgba(23, 58, 77, 0.06);
+  }
+  @page { size: A4; margin: 14mm 14mm 12mm 14mm; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--habli-fuente-texto); font-size: 10.5pt; line-height: 1.35;
+    color: var(--habli-tinta-700); background: var(--habli-blanco);
+  }
+  @media screen {
+    body { background: var(--habli-fondo); }
+    .hoja {
+      max-width: 200mm; margin: 24px auto; padding: 16mm 15mm 20mm;
+      background: var(--habli-blanco); border-radius: var(--habli-radio-md);
+      box-shadow: 0 8px 24px rgba(23, 58, 77, 0.08);
+    }
+  }
+  @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+
+  header.cabecera {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    padding-bottom: 12px; margin-bottom: 14px; border-bottom: 2.5px solid var(--habli-azul-500);
+  }
+  .cabecera img.logo { height: 50px; width: auto; }
+  .cabecera .titulo { text-align: right; }
+  .cabecera h1 {
+    font-family: var(--habli-fuente-titulo); font-weight: 600; font-size: 16pt;
+    line-height: 1.2; color: var(--habli-tinta-900); margin: 0;
+  }
+  .cabecera .fecha { font-size: 9pt; color: var(--habli-gris-400); margin-top: 3px; }
+
+  .ficha {
+    display: flex; border: 1px solid var(--habli-gris-200); border-radius: var(--habli-radio-sm);
+    overflow: hidden; margin-bottom: 14px;
+  }
+  .ficha .campo { flex: 1; padding: 8px 14px; background: var(--habli-gris-100); }
+  .ficha .campo + .campo { border-left: 1px solid var(--habli-gris-200); }
+  .ficha .etiqueta {
+    font-size: 7.5pt; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--habli-gris-400);
+  }
+  .ficha .valor {
+    font-family: var(--habli-fuente-titulo); font-weight: 600; font-size: 11.5pt;
+    color: var(--habli-tinta-900);
+  }
+
+  .encuadre {
+    background: var(--habli-azul-50); border-left: 3px solid var(--habli-azul-700);
+    border-radius: 0 var(--habli-radio-sm) var(--habli-radio-sm) 0;
+    padding: 9px 14px; margin-bottom: 18px; font-size: 9.5pt;
+  }
+  .encuadre strong { color: var(--habli-azul-700); }
+  .leyenda { font-size: 8.5pt; color: var(--habli-gris-500); margin: 0 0 14px; }
+  .leyenda b { color: var(--habli-tinta-700); }
+
+  /* ---------- Tarjeta de palabra ---------- */
+  .palabra {
+    border: 1px solid var(--habli-gris-200); border-radius: var(--habli-radio-md);
+    padding: 12px 14px; margin-bottom: 12px; background: var(--habli-blanco);
+    break-inside: avoid;
+  }
+  .palabra .cab { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+  .palabra .nombre {
+    font-family: var(--habli-fuente-titulo); font-weight: 700; font-size: 15pt;
+    color: var(--habli-tinta-900);
+  }
+  .palabra .num-orden { color: var(--habli-gris-400); font-size: 9pt; font-weight: 600; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px; font-weight: 700; font-size: 8.5pt;
+    padding: 3px 10px; border-radius: 999px; white-space: nowrap;
+  }
+  .chip.ok { background: var(--habli-verde-50); color: #3E7A2A; }
+  .chip.rev { background: #FCF0DC; color: #9A5A12; }
+  .chip.pcc { background: var(--habli-azul-50); color: var(--habli-azul-700); }
+  .palabra audio { width: 100%; height: 34px; margin: 4px 0 10px; }
+
+  .secuencias { font-size: 9.5pt; margin: 2px 0 10px; }
+  .secuencias .et { color: var(--habli-gris-500); font-weight: 600; }
+  .secuencias code {
+    font-family: "Nunito", monospace; background: var(--habli-gris-100);
+    border-radius: 6px; padding: 1px 7px; color: var(--habli-tinta-900); letter-spacing: 0.05em;
+  }
+
+  /* ---------- Onda + línea de tiempo de letras ---------- */
+  .wave-wrap { position: relative; margin: 6px 0 4px; }
+  svg.wave { display: block; width: 100%; height: 46px; }
+  svg.wave polygon { fill: var(--habli-azul-200); }
+  .fonostrip { position: relative; height: 26px; margin-top: 3px; }
+  .fono {
+    position: absolute; top: 0; height: 24px; display: flex; align-items: center;
+    justify-content: center; background: var(--habli-azul-500); color: #fff;
+    font-family: var(--habli-fuente-titulo); font-weight: 700; font-size: 9pt;
+    border-radius: 6px; min-width: 12px; overflow: hidden;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.25);
+  }
+  .eje { position: relative; height: 14px; border-top: 1px solid var(--habli-gris-200); margin-top: 2px; }
+  .eje span { position: absolute; top: 1px; font-size: 7pt; color: var(--habli-gris-400); transform: translateX(-50%); }
+
+  /* ---------- Tabla de letras ---------- */
+  table.letras { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 8.5pt; }
+  .letras th {
+    font-weight: 700; color: var(--habli-tinta-900); background: var(--habli-gris-100);
+    text-align: left; padding: 4px 8px; border-bottom: 1.5px solid var(--habli-azul-500);
+  }
+  .letras td { padding: 3px 8px; border-bottom: 1px solid var(--habli-gris-200); }
+  .letras td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .procesos { font-size: 8.5pt; color: #A8442F; margin: 8px 0 0; }
+  .procesos b { color: var(--habli-tinta-900); }
+
+  footer.pie {
+    margin-top: 16px; padding-top: 8px; border-top: 1px solid var(--habli-gris-200);
+    font-size: 8pt; color: var(--habli-gris-400); text-align: center;
+  }
+</style>
+</head>
+<body>
+<div class="hoja">
+
+  <header class="cabecera">
+    <img class="logo" src="{{ logo_src | default('/static/brand/habli-logo.png') }}" alt="Habli">
+    <div class="titulo">
+      <h1>Detalle por palabra (transcripción)</h1>
+      <div class="fecha">{{ fecha | default('') }}</div>
+    </div>
+  </header>
+
+  <div class="ficha">
+    <div class="campo"><div class="etiqueta">Niño/a</div><div class="valor">{{ alias | default('—') }}</div></div>
+    <div class="campo"><div class="etiqueta">Edad</div><div class="valor">{{ edad | default('—') }} años</div></div>
+    <div class="campo"><div class="etiqueta">Prueba</div><div class="valor">{{ n_prueba | default('—') }}</div></div>
+    <div class="campo"><div class="etiqueta">Palabras</div><div class="valor">{{ palabras | default([]) | length }}</div></div>
+  </div>
+
+  <div class="encuadre">
+    <strong>Transcripción automática.</strong> Las letras (fonemas) y sus tiempos los
+    estima el reconocedor; revíselos antes de interpretarlos. El reconocedor tiene un suelo
+    de error y no está plenamente adaptado a voz infantil. Cribado, no diagnóstico.
+  </div>
+
+  <p class="leyenda">
+    Por cada palabra: el <b>audio</b> grabado, su <b>forma de onda</b> y la <b>línea de
+    tiempo</b> de las letras detectadas (cada bloque es una letra situada en su instante).
+    <b>Esperado</b> = pronunciación de referencia; <b>Detectado</b> = lo reconocido.
+  </p>
+
+  {% for w in palabras | default([]) %}
+  {% set dur = w.dur if w.dur and w.dur > 0 else 1 %}
+  <div class="palabra">
+    <div class="cab">
+      <span class="num-orden">{{ "%02d" | format(loop.index) }}</span>
+      <span class="nombre">{{ w.palabra }}</span>
+      {% if w.pcc is not none %}<span class="chip pcc">PCC {{ w.pcc }} %{% if w.severidad %} · {{ w.severidad }}{% endif %}</span>{% endif %}
+      {% if w.valida %}<span class="chip ok">producción válida</span>
+      {% else %}<span class="chip rev">a revisar{% if w.motivo_no_valida %}: {{ w.motivo_no_valida }}{% endif %}</span>{% endif %}
+      {% if w.confianza is not none %}<span class="chip pcc">confianza {{ "%.0f" | format(w.confianza * 100) }} %</span>{% endif %}
+    </div>
+
+    {% if w.audio_b64 %}<audio controls preload="none" src="{{ w.audio_b64 }}"></audio>{% endif %}
+
+    <div class="secuencias">
+      <span class="et">Esperado:</span> <code>{{ w.esperado | default('—') }}</code>
+      &nbsp;&nbsp; <span class="et">Detectado:</span> <code>{{ w.detectado | default('—') }}</code>
+    </div>
+
+    <div class="wave-wrap">
+      <svg class="wave" viewBox="0 0 100 30" preserveAspectRatio="none">
+        <polygon points="{{ w.wave_poly }}"></polygon>
+      </svg>
+      <div class="fonostrip">
+        {% for s in w.segmentos | default([]) %}
+        <span class="fono" title="{{ s.label }} · {{ "%.2f" | format(s.t_ini) }}–{{ "%.2f" | format(s.t_fin) }}s"
+              style="left:{{ (s.t_ini / dur * 100) | round(2) }}%;width:{{ ((s.t_fin - s.t_ini) / dur * 100) | round(2) }}%">{{ s.label }}</span>
+        {% endfor %}
+      </div>
+      <div class="eje">
+        <span style="left:0%">0,0s</span>
+        <span style="left:50%">{{ "%.1f" | format(dur / 2) }}s</span>
+        <span style="left:100%">{{ "%.1f" | format(dur) }}s</span>
+      </div>
+    </div>
+
+    {% if w.segmentos %}
+    <table class="letras">
+      <thead><tr><th>Letra</th><th class="num">Inicio (s)</th><th class="num">Fin (s)</th><th class="num">Duración</th><th class="num">Confianza</th></tr></thead>
+      <tbody>
+        {% for s in w.segmentos %}
+        <tr>
+          <td><strong>{{ s.label }}</strong></td>
+          <td class="num">{{ "%.2f" | format(s.t_ini) }}</td>
+          <td class="num">{{ "%.2f" | format(s.t_fin) }}</td>
+          <td class="num">{{ "%.2f" | format(s.t_fin - s.t_ini) }}</td>
+          <td class="num">{{ "%.0f" | format(s.conf * 100) }} %</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+
+    {% set procesos = w.eventos | selectattr('tipo', 'ne', 'otro') | list %}
+    {% if procesos %}
+    <p class="procesos"><b>Procesos detectados:</b>
+      {% for e in procesos %}{{ e.tipo }}{% if e.detalle %} ({{ e.detalle }}){% endif %}{% if not loop.last %}; {% endif %}{% endfor %}.</p>
+    {% endif %}
+  </div>
+  {% endfor %}
+
+  <footer class="pie">
+    © {{ anio | default('2026') }} Habli · Proyecto Blue Route. Cribado, no diagnóstico.
+    Transcripción automática orientativa; la valoración corresponde al/a la logopeda.
+  </footer>
+
+</div>
+</body>
+</html>

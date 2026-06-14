@@ -61,40 +61,94 @@ class Resultado:
         return (self.sustituciones + self.omisiones + self.inserciones) / self.n_ref if self.n_ref else 0.0
 
 
+def canonicaliza_ops(ops):
+    """Canonicaliza alineamientos óptimos equivalentes: si un tramo de omisiones (o
+    inserciones) va seguido de un ACIERTO cuyo símbolo coincide con el PRIMER elemento
+    del tramo, se rota para que el acierto quede antes y la omisión/inserción al final.
+
+    Motivo: con símbolos repetidos hay varios alineamientos de coste mínimo y el
+    retroceso elige uno arbitrario; p.ej. ref='r o x o', hip='r o' produce
+    [✓r, omite o, omite x, ✓o] ("omite ox", sin sentido silábico) en vez del natural
+    [✓r, ✓o, omite x, omite o] ("omite xo", la sílaba final). Preferimos conservar los
+    fonemas INICIALES y omitir los FINALES (patrón real de truncamiento infantil).
+    No cambia ningún conteo (aciertos/S/D/I idénticos), solo el orden/posición."""
+    ops = list(ops)
+    cambiado = True
+    while cambiado:
+        cambiado = False
+        i = 0
+        while i < len(ops):
+            tipo = ops[i][0]
+            if tipo not in ("omision", "insercion"):
+                i += 1; continue
+            j = i
+            while j < len(ops) and ops[j][0] == tipo:
+                j += 1
+            # tramo [i, j); ¿le sigue un acierto con el mismo símbolo que ops[i]?
+            if j < len(ops) and ops[j][0] == "acierto":
+                simbolo = ops[i][1] if tipo == "omision" else ops[i][2]
+                if ops[j][1] == simbolo:
+                    nuevo_final = (("omision", simbolo, "∅") if tipo == "omision"
+                                   else ("insercion", "∅", simbolo))
+                    ops[i:j + 1] = [ops[j]] + ops[i + 1:j] + [nuevo_final]
+                    cambiado = True
+            i = j
+    return ops
+
+
+_VOCALES = set("aeiou")
+
+
+def _coste_sustitucion(a: str, b: str) -> float:
+    """Coste fonológicamente ponderado: sustituir DENTRO de la misma clase (vocal↔vocal,
+    consonante↔consonante) cuesta 1.0; CRUZAR clase (vocal↔consonante) cuesta 1.5.
+
+    Motivo: ante alineamientos de coste igual con la métrica plana, el retroceso podía
+    emparejar una vocal de la referencia con una consonante insertada (p.ej. 'gorro'
+    g o r o vs 'g u r r o s': elegía o→r 'asimilación' FALSA en vez de o→u + inserción).
+    Con la ponderación, el alineador prefiere siempre el emparejamiento con sentido
+    fonológico. Sigue siendo < 2.0 (omisión+inserción), así que las sustituciones
+    vocal↔consonante GENUINAS (sin alternativa de igual coste) se conservan."""
+    if a == b:
+        return 0.0
+    return 1.0 if ((a in _VOCALES) == (b in _VOCALES)) else 1.5
+
+
 def alinear(ref: list[str], hip: list[str]) -> Resultado:
-    """Alineamiento por distancia de edición con retroceso de operaciones."""
+    """Alineamiento por distancia de edición ponderada con retroceso de operaciones."""
     n, m = len(ref), len(hip)
-    # matriz de costes
-    d = [[0] * (m + 1) for _ in range(n + 1)]
+    # matriz de costes (float: la sustitución entre clases vale 1.5)
+    d = [[0.0] * (m + 1) for _ in range(n + 1)]
     for i in range(n + 1):
-        d[i][0] = i
+        d[i][0] = float(i)
     for j in range(m + 1):
-        d[0][j] = j
+        d[0][j] = float(j)
     for i in range(1, n + 1):
         for j in range(1, m + 1):
-            coste_sub = 0 if ref[i - 1] == hip[j - 1] else 1
             d[i][j] = min(
-                d[i - 1][j] + 1,            # omisión (borrar ref)
-                d[i][j - 1] + 1,            # inserción (añadir hip)
-                d[i - 1][j - 1] + coste_sub  # acierto/sustitución
+                d[i - 1][j] + 1.0,                                  # omisión (borrar ref)
+                d[i][j - 1] + 1.0,                                  # inserción (añadir hip)
+                d[i - 1][j - 1] + _coste_sustitucion(ref[i - 1], hip[j - 1]),
             )
-    # retroceso
+    # retroceso (los costes son múltiplos exactos de 0.5: la igualdad float es segura)
     res = Resultado(n_ref=n)
     i, j = n, m
     while i > 0 or j > 0:
         if i > 0 and j > 0 and ref[i - 1] == hip[j - 1] and d[i][j] == d[i - 1][j - 1]:
             res.aciertos += 1
             res.ops.append(("acierto", ref[i - 1], hip[j - 1])); i -= 1; j -= 1
-        elif i > 0 and j > 0 and d[i][j] == d[i - 1][j - 1] + 1:
+        elif (i > 0 and j > 0
+              and d[i][j] == d[i - 1][j - 1] + _coste_sustitucion(ref[i - 1], hip[j - 1])):
             res.sustituciones += 1
             res.ops.append(("sustitucion", ref[i - 1], hip[j - 1])); i -= 1; j -= 1
-        elif i > 0 and d[i][j] == d[i - 1][j] + 1:
+        elif i > 0 and d[i][j] == d[i - 1][j] + 1.0:
             res.omisiones += 1
             res.ops.append(("omision", ref[i - 1], "∅")); i -= 1
         else:
             res.inserciones += 1
             res.ops.append(("insercion", "∅", hip[j - 1])); j -= 1
     res.ops.reverse()
+    res.ops = canonicaliza_ops(res.ops)
     return res
 
 

@@ -160,6 +160,49 @@ de las 32 palabras** (vía Clínica Pediátrica Amado). Detalle en
   usuario** cuando no; siempre **corregibles**. Encaja con el paso de **Registro** de la app.
 - **Salida estructurada (JSON)** por palabra/niño: fonemas esperados vs detectados, procesos
   fonológicos, PCC y nivel de riesgo → consumible directamente por el front-end de screening.
+- **Motor clínico** ([src/pipeline/clinico.py](src/pipeline/clinico.py) + [app_demo](src/scripts/app_demo.py)):
+  registro (edad 3-6) → 32 palabras → 8 procesos fonológicos → **riesgo por edad** (Bajo 0-2 /
+  Medio 3-5 / Alto >5 errores *impropios para la edad*, o baja inteligibilidad vía confianza de
+  transcripción). Normas por edad **configurables** en `data/normas_edad.csv`. Modo clínico que
+  conserva ɾ/r (rr) y vocales (diptongos). El demo muestra la **sensibilidad por edad**: la misma
+  sesión sale BAJO a los 3-4 años y se marca a los 5-6 (donde el ruido del reconocedor ~18% se
+  cuenta como 'alerta') → cuantifica por qué hay que adaptar el reconocedor a voz infantil y
+  calibrar umbrales (datos de la Clínica Amado).
+
+### 9.0 Mejora del reconocimiento (decodificación restringida)
+El cuello de botella era el suelo de ruido del ASR en decodificación libre (~18% PER adultos). Se
+añadió una **decodificación RESTRINGIDA + GOP** (`pipeline/decodificacion.py`): como se sabe qué
+palabra se pide, se puntúan la realización canónica y las que generan los 8 procesos contra los
+logits CTC (colapsados a clases clínicas, robusto a seseo/yeísmo) y gana la más probable. **PER
+0.36 → 0.11 en adultos** (≈3×; `8_comparar_reconocedor.py`). Es la estrategia por defecto, conmutable
+con la libre. Complementos: **Silero-VAD + puerta de calidad** (recorte y motivo real de repetición),
+**calibración por palabra** (suelo de error del ASR, informativa, no descuenta → sensibilidad intacta),
+**modo infantil** por pitch-shift en test-time (A/B; LoRA como scaffold) y **consentimiento** para
+guardar audio+edad anonimizados de entrenamiento.
+
+### 9.1 Aplicación conversacional (dos grafos agénticos)
+Sobre el motor anterior se ha construido la **app de la propuesta** (`src/app/`), con **LangGraph +
+Groq** y **FastAPI**, inspirada en la arquitectura del repo de referencia (orquestador + subagentes + tools):
+- **Grafo Familia/Niño** ("Lumi") **conducido por el LLM**: un orquestador (tool-calling) guía
+  Registro → Prueba de audio → Resultado (vista familiar SIMPLE: solo nivel + recomendación) →
+  Ejercicios de estimulación → Envío, **anuncia cada paso** y emite **señales de acción** para la UI
+  (`pedir_registro · iniciar_grabacion · mostrar_resultado · mostrar_ejercicios · ofrecer_envio`).
+  Dos subagentes: **operativo** (palabras + ejercicios) y **análisis** (evalúa/clasifica/guarda +
+  nota clínica con **PCC multinivel**: por palabra, por grupo de error y global, con severidad
+  Shriberg — vista del profesional). Las cifras las calcula el motor (no el LLM); los confounds de
+  equidad del registro (bilingüismo, audición, L2) generan avisos sin alterar el riesgo.
+- **Re-test** = núcleo fijo + palabras falladas previas; **histórico** completo por niño (audios
+  versionados `sesiones/<nino>/p<N>/` + pruebas en SQLite) con **persistencia** por proceso
+  (persistente/nuevo/resuelto) y válvulas (2 "alto" seguidos → especialista). **Ronda extra
+  opcional** (neutra, con palabras alternativas de la misma estructura) que puede corregir el
+  resultado si los errores nuevos no se confirman. **Ejercicios de estimulación (NO terapia)** en
+  3 niveles con gating por edad/normas; plan de seguimiento global del especialista por
+  **riesgo × edad** (180/42/21 días, `data/plan_seguimiento.csv`, editable por API).
+- **Grafo Logopeda**: asistente con **tool-calling** (análisis con severidad PCC, editor de revisión,
+  re-puntuación human-in-the-loop, plan, evolución, export). **Entrega:** editor HTML interactivo de
+  timeline + **PDF** con la evolución (prueba 1 vs 2) + enlace **`mailto:`** al especialista.
+- **Privacidad (RGPD):** el audio infantil se procesa en local y **nunca** se envía al LLM. Estado de
+  chat e histórico en SQLite. Sin `GROQ_API_KEY` el flujo degrada a una orquestación determinista.
 
 ---
 
@@ -180,8 +223,44 @@ de las 32 palabras** (vía Clínica Pediátrica Amado). Detalle en
 - Dataset pequeño y sesgado (parte del desafío); *No nativo* poco fiable (confound de palabra).
 - T2 (origen) modesto: el acento en palabra aislada da poca señal → se mitiga con human-in-the-loop.
 - Referencia fonémica hecha por IA: **requiere validación de logopeda**.
-- Reconocedor sin adaptar a voz infantil (domain gap confirmado).
-- Sin normas por edad (necesarias para fijar umbrales clínicos de riesgo).
+- Reconocedor sin adaptar a voz infantil (domain gap confirmado); normas por edad por validar clínicamente.
+- **Taxonomía limitada a los 8 procesos del documento clínico.** Cualquier otra discrepancia
+  (frontalización velar `k→t`/`g→d`, deafricación `tʃ→s`, omisión de consonante **inicial/medial**,
+  confusión tap/vibrante `ɾ↔r`, cambios vocálicos) se clasifica como **"otra discrepancia
+  (no objetivo)"** y **NO cuenta como error**. Es deliberado (evita contar ruido del reconocedor
+  ~18% PER y variación dialectal), pero implica que **procesos clínicos reales fuera de los 8 no se
+  detectan** (posible falso negativo). Decisión pendiente con la logopeda: ¿ampliar la taxonomía?
+  - **Mitigación (guardián de validez):** una producción **no válida** —muchas inserciones
+    (`> max(2, 0.5×n_ref)`, p.ej. decir una palabra mucho más larga) o cobertura `< ⅓` de los
+    fonemas esperados (palabra distinta, balbuceo o silencio)— **nunca se marca "correcta" ni
+    puntúa errores**: va a "a repetir" (re-elicitación) y cuenta para la puerta de inteligibilidad.
+    Umbrales calibrados con las 32 palabras adultas (máx. observado: 1 inserción, cobertura ≥0.40).
+  - **Alineamiento canonicalizado:** ante alineamientos óptimos equivalentes (fonemas repetidos),
+    se prefiere conservar los fonemas iniciales y omitir los finales (patrón real de truncamiento:
+    "ro" por "rojo" = omite la sílaba final "xo", no un segmento interior "ox").
+  - **Validez híbrida en la decodificación restringida:** la restringida clasifica entre hipótesis
+    cerradas (necesita clase de rechazo), así que la validez combina el GOP (los fonemas esperados
+    deben encajar) con el guardián de inserciones/cobertura sobre la transcripción LIBRE del mismo
+    audio ("gorrocóptero" contiene "gorro" y ganaría la canónica; el guardián lo detecta). La
+    transcripción libre se guarda en el informe (`transcripcion_libre`) para el profesional.
+    **Límite conocido:** un añadido de una sola sílaba en palabra corta ("sillón" por "silla",
+    1 inserción) queda por debajo del umbral de ruido del ASR (≤1 inserción en habla correcta) y
+    no es detectable sin léxico; se mitiga parcialmente vía GOP/confianza baja → reintento.
+  - **Espacio de hipótesis (restringida):** cubre los 8 procesos + variantes; reducción de grupos
+    genera tanto "omite obstruyente" como "omite líquida" (forma infantil más común: "tes","banco").
+    Procesos fuera de los 8 (lateralización ʎ→l, omisión de consonante inicial/media) se generan como
+    hipótesis "otro" (se muestran al profesional, NO cuentan). La selección del ganador tiene **sesgo
+    FP>FN**: entre hipótesis cercanas (banda 0.5) se prefiere un proceso objetivo (cuenta) sobre uno
+    "otro" sobre la canónica, para no enterrar procesos clínicos.
+  - **Límites del modelo acústico (validados con grabaciones reales de la compañera):** (a) en grupos
+    consonánticos el ASR puede ALUCINAR la líquida ("banco"→`b l a n k o`); (b) NO distingue de forma
+    fiable vibrante múltiple /r/ de tap /ɾ/ intervocálicos ("goro"≈"gorro"). Mitigaciones: la
+    canonicalización + las nuevas hipótesis recuperan muchos casos; para /r/ vs /ɾ/ se añade una
+    **heurística de duración** (segmento rótico < ~50 ms → flag `duda_rr` informativo, no cuenta).
+    Solución de fondo = fine-tune con voz infantil real (scaffold `9_finetune_lora.py` + Clínica Amado).
+- **PCC ≠ "correcta":** el PCC (% consonantes correctas) y el indicador clínico (¿alguno de los 8
+  procesos?) son métricas distintas; una palabra con PCC bajo puede figurar sin error clínico.
+- **Plegado dialectal por diseño:** seseo `θ=s` y yeísmo `ʎ=ʝ` nunca cuentan como error.
 
 ---
 

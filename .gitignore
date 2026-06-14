@@ -3,9 +3,15 @@
 __pycache__/
 *.pyc
 
+# Secretos y base de datos local (datos sensibles, RGPD)
+.env
+data/*.sqlite
+
 # Datos pesados (no versionar audios ni corpus descargados)
 data/raw/*
 data/processed/*
+data/entrenamiento/*          # audios infantiles con consentimiento (dato sensible)
+data/lora_infantil/           # adapter LoRA (futuro)
 !data/raw/.gitkeep
 !data/processed/.gitkeep
 

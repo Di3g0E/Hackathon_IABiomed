@@ -1,0 +1,33 @@
+palabra,n,fiabilidad,pcc_esperado,procesos_ruido
+autobus,1,1.0,100.0,{}
+barco,6,0.833,94.5,"{""omision_silabas"": 0.167}"
+blanco,10,1.0,97.5,{}
+bolso,4,0.75,83.3,"{""oclusivizacion"": 0.25}"
+bufanda,6,1.0,100.0,{}
+cara,9,1.0,100.0,{}
+chaqueta,6,0.833,94.5,"{""oclusivizacion"": 0.167}"
+cielo,11,1.0,100.0,{}
+clase,4,0.75,91.7,"{""reduccion_grupos"": 0.25}"
+cristal,5,0.6,92.0,"{""reduccion_grupos"": 0.4}"
+diente,6,1.0,100.0,{}
+espada,6,1.0,94.5,{}
+estrella,16,0.938,96.9,"{""omision_silabas"": 0.062}"
+flecha,4,0.75,91.7,"{""oclusivizacion"": 0.25}"
+fruta,7,0.714,90.5,"{""reduccion_grupos"": 0.143, ""sustitucion_r_l"": 0.143}"
+fuego,7,0.857,92.9,"{""simplificacion_diptongos"": 0.143}"
+globo,5,1.0,100.0,{}
+gorro,4,1.0,87.5,{}
+jabon,5,1.0,80.0,{}
+lapiz,6,0.833,94.5,"{""omision_consonantes_finales"": 0.167}"
+libro,8,0.75,91.7,"{""reduccion_grupos"": 0.25}"
+mosca,10,0.8,86.7,"{""asimilaciones"": 0.2}"
+negro,7,0.857,95.2,"{""reduccion_grupos"": 0.143}"
+niño,9,1.0,100.0,{}
+peine,3,0.667,83.3,"{""simplificacion_diptongos"": 0.333}"
+piedra,14,0.929,95.2,"{""sustitucion_r_l"": 0.071}"
+plancha,3,0.667,91.7,"{""oclusivizacion"": 0.333}"
+rojo,7,0.714,85.7,"{""errores_rr"": 0.143, ""oclusivizacion"": 0.143}"
+silla,11,0.909,72.7,"{""omision_silabas"": 0.091}"
+tambor,5,1.0,100.0,{}
+taza,8,1.0,93.8,{}
+tres,14,0.643,88.1,"{""omision_consonantes_finales"": 0.286, ""reduccion_grupos"": 0.071}"

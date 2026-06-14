@@ -1,0 +1,95 @@
+/* ============================================================
+   HABLI · Design Tokens
+   Fuente única de verdad para la estética de la app.
+   Paleta alineada con el logo: azul (wordmark), verde (loro Lali),
+   amarillo + naranja (acentos). Importar en :root.
+   ============================================================ */
+
+:root {
+  /* ---------- Azul (PRIMARIO · wordmark, salud, tecnología, confianza) ---------- */
+  --habli-azul-700: #2C7186;  /* texto/contorno del wordmark, acento sobre claro */
+  --habli-azul-600: #3F92AC;
+  --habli-azul-500: #52B2CB;  /* COLOR DE MARCA principal (HABLI) */
+  --habli-azul-400: #84CFE0;
+  --habli-azul-200: #C4E8F2;
+  --habli-azul-50:  #EAF7FB;
+
+  /* ---------- Verde (SECUNDARIO · Lali, crecimiento, aprendizaje) ---------- */
+  --habli-verde-700: #3E7A2A;
+  --habli-verde-600: #549636;
+  --habli-verde-500: #66B43F;  /* verde de marca / Lali */
+  --habli-verde-400: #8CCB52;
+  --habli-verde-200: #CDE9A8;
+  --habli-verde-50:  #EFF8E4;
+
+  /* ---------- Amarillo (ACENTO · energía, atención, diversión) ---------- */
+  /* Solo para destacar: cresta, estrellas, recompensas, foco, bocadillos. Nunca fondo grande. */
+  --habli-amarillo-500: #F2C242;
+  --habli-amarillo-400: #F6D266;
+  --habli-amarillo-200: #FBEBB4;
+  --habli-amarillo-50:  #FDF7E2;
+
+  /* ---------- Naranja (ACENTO CÁLIDO · pico/mejillas de Lali, recompensas, CTA secundario) ---------- */
+  --habli-naranja-600: #E5792E;  /* boca/lengua, call-out intenso */
+  --habli-naranja-500: #EF9A30;
+  --habli-naranja-400: #F2B33F;
+  --habli-naranja-50:  #FCF0DC;
+
+  /* ---------- Tinta y neutros (subtono azul-teal, nunca negro puro) ---------- */
+  --habli-tinta-900: #173A4D;  /* títulos */
+  --habli-tinta-700: #2C5566;  /* cuerpo */
+  --habli-gris-500:  #5E7785;  /* texto secundario */
+  --habli-gris-400:  #93A7B2;  /* texto atenuado, captions */
+  --habli-gris-200:  #D9E3E8;  /* bordes, divisores */
+  --habli-gris-100:  #EFF4F6;  /* paneles, filas alternas */
+  --habli-fondo:     #F6FAFB;  /* fondo de página */
+  --habli-blanco:    #FFFFFF;
+
+  /* ---------- Semánticos de riesgo (SOLO superficie profesional/logopeda) ---------- */
+  /* Calmados y clínicos. Nunca mostrar de forma alarmante a las familias. */
+  --habli-riesgo-bajo:  #66B43F;  /* verde */
+  --habli-riesgo-medio: #EF9A30;  /* ámbar/naranja */
+  --habli-riesgo-alto:  #E5705A;  /* coral cálido (NO rojo intenso) */
+
+  /* ---------- Gradientes de marca ---------- */
+  --habli-grad-marca:   linear-gradient(135deg, #66B43F 0%, #52B2CB 100%); /* verde→azul */
+  --habli-grad-casco:   linear-gradient(180deg, #4179B8 0%, #27508C 100%); /* azul marino de los cascos */
+  --habli-grad-hero:    linear-gradient(160deg, #EFF8E4 0%, #EAF7FB 100%); /* fondo suave verde→azul */
+
+  /* ---------- Tipografía ---------- */
+  --habli-fuente-titulo: "Poppins", "Nunito", "Trebuchet MS", sans-serif; /* geométrica, moderna */
+  --habli-fuente-texto:  "Nunito", "Poppins", system-ui, sans-serif;      /* redondeada, cálida, legible */
+  /* Wordmark "HABLI": MAYÚSCULAS, peso ExtraBold (800), con ligero contorno azul 700.
+     Alternativa válida y más redondeada: Fredoka / Baloo 2 para el wordmark. */
+
+  --habli-peso-regular: 400;
+  --habli-peso-medium:  600;
+  --habli-peso-bold:    700;
+  --habli-peso-black:   800;
+
+  /* Escala (modo app estándar). Modo niño sube un paso; clínico baja. */
+  --habli-fs-display: 40px;  --habli-lh-display: 1.1;
+  --habli-fs-h1:      28px;  --habli-lh-h1: 1.2;
+  --habli-fs-h2:      22px;  --habli-lh-h2: 1.25;
+  --habli-fs-h3:      18px;  --habli-lh-h3: 1.3;
+  --habli-fs-body:    16px;  --habli-lh-body: 1.55;
+  --habli-fs-small:   14px;  --habli-lh-small: 1.45;
+  --habli-fs-caption: 12px;  --habli-lh-caption: 1.4;
+
+  /* ---------- Radios (redondeados = amables) ---------- */
+  --habli-radio-sm:   10px;
+  --habli-radio-md:   16px;
+  --habli-radio-lg:   24px;
+  --habli-radio-xl:   32px;
+  --habli-radio-full: 999px;
+
+  /* ---------- Sombras (suaves, teñidas de azul; nunca duras) ---------- */
+  --habli-sombra-sm: 0 2px 6px rgba(23, 58, 77, 0.06);
+  --habli-sombra-md: 0 8px 24px rgba(23, 58, 77, 0.08);
+  --habli-sombra-lg: 0 16px 40px rgba(23, 58, 77, 0.10);
+
+  /* ---------- Espaciado (ritmo de 4px) ---------- */
+  --habli-esp-1: 4px;  --habli-esp-2: 8px;  --habli-esp-3: 12px;
+  --habli-esp-4: 16px; --habli-esp-6: 24px; --habli-esp-8: 32px;
+  --habli-esp-12: 48px; --habli-esp-16: 64px;
+}

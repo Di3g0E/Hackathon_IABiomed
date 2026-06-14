@@ -1,0 +1,238 @@
+/* ============================================================
+   HABLI · Base — reset, tipografía y componentes de marca.
+   Tokens en /static/brand/habli-tokens.css (fuente única de verdad).
+   ============================================================ */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+}
+
+body {
+  font-family: var(--habli-fuente-texto);
+  font-size: var(--habli-fs-body);
+  line-height: var(--habli-lh-body);
+  color: var(--habli-tinta-700);
+  /* fondo de color (no blanco): Azul 50 de la paleta Habli */
+  background: var(--habli-azul-50);
+  transition: background-color 250ms ease-out;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, .h-titulo {
+  font-family: var(--habli-fuente-titulo);
+  color: var(--habli-tinta-900);
+  margin: 0 0 var(--habli-esp-4);
+}
+h1 { font-size: var(--habli-fs-h1); line-height: var(--habli-lh-h1); font-weight: 700; }
+h2 { font-size: var(--habli-fs-h2); line-height: var(--habli-lh-h2); font-weight: 600; }
+h3 { font-family: var(--habli-fuente-texto); font-size: var(--habli-fs-h3); font-weight: 700; }
+
+p { margin: 0 0 var(--habli-esp-3); }
+img { max-width: 100%; }
+button { font-family: inherit; cursor: pointer; }
+
+a { color: var(--habli-azul-700); font-weight: var(--habli-peso-medium); }
+
+:focus-visible {
+  outline: 3px solid var(--habli-azul-500);
+  outline-offset: 3px;
+  border-radius: var(--habli-radio-sm);
+}
+
+.oculto { display: none !important; }
+.texto-secundario { color: var(--habli-gris-500); font-size: var(--habli-fs-small); }
+.texto-caption { color: var(--habli-gris-400); font-size: var(--habli-fs-caption); font-weight: 600; }
+.centrado { text-align: center; }
+
+/* ---------- Botones ---------- */
+.h-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--habli-esp-2);
+  min-height: 48px;
+  padding: var(--habli-esp-3) var(--habli-esp-6);
+  border: none;
+  border-radius: var(--habli-radio-full);
+  font-family: var(--habli-fuente-texto);
+  font-size: var(--habli-fs-body);
+  font-weight: var(--habli-peso-bold);
+  background: var(--habli-azul-500);
+  color: var(--habli-blanco);
+  box-shadow: var(--habli-sombra-sm);
+  transition: background-color 200ms ease-out, transform 200ms ease-out, box-shadow 200ms ease-out;
+}
+.h-btn:hover { background: var(--habli-azul-600); transform: translateY(-1px); box-shadow: var(--habli-sombra-md); }
+.h-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+.h-btn--secundario {
+  background: var(--habli-blanco);
+  color: var(--habli-azul-700);
+  border: 2px solid var(--habli-azul-500);
+}
+.h-btn--secundario:hover { background: var(--habli-azul-50); }
+
+.h-btn--verde { background: var(--habli-verde-500); }
+.h-btn--verde:hover { background: var(--habli-verde-600); }
+
+.h-btn--fantasma {
+  background: transparent;
+  color: var(--habli-gris-500);
+  box-shadow: none;
+}
+.h-btn--fantasma:hover { background: var(--habli-gris-100); transform: none; box-shadow: none; }
+
+/* Botón de juego (modo niño): enorme, gradiente de marca */
+.h-btn--juego {
+  min-height: 72px;
+  padding: var(--habli-esp-4) var(--habli-esp-8);
+  font-size: 22px;
+  font-weight: var(--habli-peso-black);
+  border-radius: var(--habli-radio-full);
+  background: var(--habli-grad-marca);
+  box-shadow: var(--habli-sombra-md);
+}
+.h-btn--juego:hover { background: var(--habli-grad-marca); filter: brightness(1.05); }
+
+/* ---------- Tarjetas ---------- */
+.h-card {
+  background: var(--habli-blanco);
+  border-radius: var(--habli-radio-lg);
+  box-shadow: var(--habli-sombra-md);
+  padding: var(--habli-esp-6);
+}
+
+/* ---------- Chips ---------- */
+.h-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--habli-esp-2);
+  padding: var(--habli-esp-1) var(--habli-esp-3);
+  border-radius: var(--habli-radio-full);
+  font-size: var(--habli-fs-small);
+  font-weight: var(--habli-peso-bold);
+  background: var(--habli-azul-50);
+  color: var(--habli-azul-700);
+}
+.h-chip--riesgo-bajo  { background: var(--habli-verde-50);   color: var(--habli-verde-700); }
+.h-chip--riesgo-medio { background: var(--habli-naranja-50); color: #9C5A12; }
+.h-chip--riesgo-alto  { background: #FBE9E5;                 color: #A6402F; }
+
+/* ---------- Formularios ---------- */
+.h-campo { margin-bottom: var(--habli-esp-4); }
+.h-campo label {
+  display: block;
+  font-weight: var(--habli-peso-bold);
+  color: var(--habli-tinta-900);
+  margin-bottom: var(--habli-esp-2);
+}
+.h-input, .h-select {
+  width: 100%;
+  min-height: 48px;
+  padding: var(--habli-esp-3) var(--habli-esp-4);
+  border: 2px solid var(--habli-gris-200);
+  border-radius: var(--habli-radio-md);
+  font-family: var(--habli-fuente-texto);
+  font-size: var(--habli-fs-body);
+  color: var(--habli-tinta-700);
+  background: var(--habli-blanco);
+  transition: border-color 200ms ease-out;
+}
+.h-input:focus, .h-select:focus { border-color: var(--habli-azul-500); outline: none; }
+.h-input::placeholder { color: var(--habli-gris-400); opacity: 1; }
+
+/* bocadillos de formulario: campos blancos redondeados directamente sobre el fondo */
+.h-input--bocadillo, .h-select--bocadillo {
+  border: none;
+  border-radius: var(--habli-radio-lg);
+  box-shadow: var(--habli-sombra-sm);
+  min-height: 56px;
+}
+
+.h-check {
+  display: flex;
+  gap: var(--habli-esp-3);
+  align-items: flex-start;
+  padding: var(--habli-esp-3) var(--habli-esp-4);
+  border-radius: var(--habli-radio-lg);
+  background: var(--habli-blanco);
+  box-shadow: var(--habli-sombra-sm);
+  font-size: var(--habli-fs-small);
+}
+.h-check input { width: 22px; height: 22px; margin-top: 2px; accent-color: var(--habli-azul-500); flex: none; }
+
+/* Chips seleccionables (edad, sí/no) */
+.h-opciones { display: flex; flex-wrap: wrap; gap: var(--habli-esp-3); }
+.h-opcion {
+  min-width: 64px;
+  min-height: 56px;
+  padding: var(--habli-esp-3) var(--habli-esp-4);
+  border: 2px solid var(--habli-gris-200);
+  border-radius: var(--habli-radio-md);
+  background: var(--habli-blanco);
+  font-size: var(--habli-fs-h3);
+  font-weight: var(--habli-peso-bold);
+  color: var(--habli-tinta-700);
+  transition: all 200ms ease-out;
+}
+.h-opcion[aria-pressed="true"] {
+  border-color: var(--habli-azul-500);
+  background: var(--habli-azul-200);
+  color: var(--habli-azul-700);
+}
+
+/* ---------- "Lali está pensando": tres puntos grandes que botan ---------- */
+.pensando {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  min-height: 24px;
+}
+.pensando span {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--habli-azul-500);
+  animation: h-bota 1s ease-in-out infinite;
+}
+.pensando span:nth-child(2) { animation-delay: 0.15s; }
+.pensando span:nth-child(3) { animation-delay: 0.3s; }
+@keyframes h-bota {
+  0%, 100% { transform: translateY(0); opacity: 0.45; }
+  50% { transform: translateY(-8px); opacity: 1; }
+}
+
+/* ---------- Botón de volver: gordito y visual para un niño pequeño ---------- */
+.btn-volver {
+  width: 68px;
+  height: 68px;
+  border: none;
+  border-radius: var(--habli-radio-full);
+  background: var(--habli-blanco);
+  box-shadow: var(--habli-sombra-md);
+  color: var(--habli-azul-700);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 200ms ease-out;
+}
+.btn-volver:hover { transform: scale(1.08); }
+.btn-volver svg { width: 36px; height: 36px; }
+
+/* ---------- Animaciones ---------- */
+@keyframes h-aparece { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes h-rebote { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
+@keyframes h-pulso { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.12); } }
+@keyframes h-estrella-cae {
+  from { transform: translateY(-40px) rotate(0deg); opacity: 1; }
+  to   { transform: translateY(110vh) rotate(220deg); opacity: 0.7; }
+}
+.anima-aparece { animation: h-aparece 300ms ease-out; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
