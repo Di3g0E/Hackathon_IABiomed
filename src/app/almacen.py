@@ -70,19 +70,36 @@ def conectar(raiz):
 
 
 def registrar_nino(conn, nino_id, alias=None, edad=None, sexo=None, factores=None):
-    """Crea o actualiza el registro del niño (upsert)."""
-    conn.execute(
-        """INSERT INTO ninos (id, alias, edad, sexo, factores_json, creado)
-           VALUES (?,?,?,?,?,?)
-           ON CONFLICT(id) DO UPDATE SET
-             alias=COALESCE(excluded.alias, ninos.alias),
-             edad=COALESCE(excluded.edad, ninos.edad),
-             sexo=COALESCE(excluded.sexo, ninos.sexo),
-             factores_json=COALESCE(excluded.factores_json, ninos.factores_json)""",
-        (nino_id, alias or nino_id, edad, sexo,
-         json.dumps(factores or {}, ensure_ascii=False), _ahora()),
-    )
-    conn.commit()
+    """Crea o actualiza el registro del niño.
+
+    En una actualización SOLO se tocan los campos que llegan (los None se ignoran), para
+    no pisar datos existentes:
+      - alias/edad/sexo: se actualizan solo si se pasan (no se reemplaza el nombre por el id).
+      - factores: se FUSIONA con lo guardado (una actualización parcial no borra claves
+        como 'avatar', 'email_especialista' o los consentimientos)."""
+    prev = conn.execute("SELECT factores_json FROM ninos WHERE id=?", (nino_id,)).fetchone()
+    if prev is None:
+        conn.execute(
+            "INSERT INTO ninos (id, alias, edad, sexo, factores_json, creado) VALUES (?,?,?,?,?,?)",
+            (nino_id, alias or nino_id, edad, sexo,
+             json.dumps(factores or {}, ensure_ascii=False), _ahora()))
+        conn.commit()
+        return nino_id
+    sets, params = [], []
+    if alias is not None:
+        sets.append("alias=?"); params.append(alias)
+    if edad is not None:
+        sets.append("edad=?"); params.append(edad)
+    if sexo is not None:
+        sets.append("sexo=?"); params.append(sexo)
+    if factores is not None:
+        actual = json.loads(prev["factores_json"]) if prev["factores_json"] else {}
+        actual.update(factores)
+        sets.append("factores_json=?"); params.append(json.dumps(actual, ensure_ascii=False))
+    if sets:
+        params.append(nino_id)
+        conn.execute(f"UPDATE ninos SET {', '.join(sets)} WHERE id=?", params)
+        conn.commit()
     return nino_id
 
 

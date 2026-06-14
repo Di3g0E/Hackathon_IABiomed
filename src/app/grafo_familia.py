@@ -110,10 +110,13 @@ def confirmar_registro(nino_id: str) -> dict:
         return {"error": "Falta el nombre (obligatorio)."}
     # la edad es opcional: si falta, la estimará el modelo de voz en el primer juego
     alias = reg.get("nombre") or reg.get("alias")
-    factores = {k: reg.get(k) for k in ("sexo", "lengua_materna", "bilinguismo",
-                                        "problemas_auditivos", "email_especialista")}
+    # solo claves con valor: registrar_nino fusiona, así no anulamos datos ya guardados
+    # (p. ej. avatar/lengua/email) con None
+    factores = {k: reg[k] for k in ("sexo", "lengua_materna", "bilinguismo",
+                                    "problemas_auditivos", "email_especialista", "avatar")
+                if reg.get(k) is not None}
     herramientas.registrar_nino(nino_id, alias=alias, edad=reg.get("edad"),
-                                sexo=reg.get("sexo"), factores=factores)
+                                sexo=reg.get("sexo"), factores=factores or None)
     return {"ok": True, "_accion": None, "alias": alias, "edad": reg.get("edad")}
 
 

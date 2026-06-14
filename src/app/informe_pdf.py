@@ -291,8 +291,9 @@ def datos_desde_nino(nino_id):
 
     edad = fila["edad"] if fila else None
     pruebas_ev = [e for e in tl if e["tipo"] == "prueba_audio"]
-    if edad is None:
-        edad = (pruebas_ev[-1]["payload"]["registro"]["edad"] if pruebas_ev else 5)
+    if edad is None and pruebas_ev:
+        edad = (pruebas_ev[-1]["payload"].get("registro", {}) or {}).get("edad")
+    edad = edad or 5
     pruebas = [_prueba_desde_informe(e["payload"], n_prueba=e["n_prueba"], ts=e["ts"], edad=edad)
                for e in pruebas_ev]
     scr = next((e["payload"] for e in reversed(tl) if e["tipo"] == "screening"), None)
