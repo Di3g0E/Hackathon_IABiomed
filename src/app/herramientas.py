@@ -34,18 +34,41 @@ SR = 16_000
 # --- Reconocedor (carga perezosa, singleton: el modelo pesa y tarda en cargar) ---
 import threading
 
-_W2V = None
+# Arquitectura híbrida: _W2V_FULL (fp32, cloud/informe) y _W2V_EDGE (int8, móvil/vivo).
+_W2V_FULL = None
+_W2V_EDGE = None
 _W2V_LOCK = threading.Lock()
 
 
-def get_w2v():
-    global _W2V
-    if _W2V is None:
+def get_w2v_full():
+    global _W2V_FULL
+    if _W2V_FULL is None:
         with _W2V_LOCK:
-            if _W2V is None:        # doble comprobación (evita doble carga concurrente)
+            if _W2V_FULL is None:
                 from pipeline.reconocedor import W2V
-                _W2V = W2V()
-    return _W2V
+                _W2V_FULL = W2V()
+    return _W2V_FULL
+
+
+def get_w2v_edge():
+    global _W2V_EDGE
+    if _W2V_EDGE is None:
+        with _W2V_LOCK:
+            if _W2V_EDGE is None:
+                from pipeline.cuantizacion import cargar_w2v_cuantizado
+                _W2V_EDGE = cargar_w2v_cuantizado()
+    return _W2V_EDGE
+
+
+def get_w2v(rol="vivo"):
+    """Reconocedor según backend y ROL. rol='vivo' (juego/grabación) usa EDGE int8 salvo
+    en backend 'cloud'; rol='informe' (especialista) usa FULL fp32 salvo en backend 'edge'.
+    En 'hibrido' (def): el niño juega con el modelo rápido y el informe usa el completo."""
+    from app import config
+    backend = getattr(config, "BACKEND_RECONOCEDOR", "cloud")
+    if rol == "informe":
+        return get_w2v_edge() if backend == "edge" else get_w2v_full()
+    return get_w2v_edge() if backend in ("edge", "hibrido") else get_w2v_full()
 
 
 # --- Estimación de edad por voz (modelo especializado audeering w2v2 age-gender) ---
@@ -97,6 +120,12 @@ def _get_edad_model():
 
                 proc = Wav2Vec2Processor.from_pretrained(EDAD_MODEL_ID)
                 model = _AgeGender.from_pretrained(EDAD_MODEL_ID).eval()
+                # No hay versión int8 oficial: en backend edge/híbrido se cuantiza local
+                # (móvil); en cloud se mantiene fp32.
+                from app import config
+                if getattr(config, "BACKEND_RECONOCEDOR", "cloud") in ("edge", "hibrido"):
+                    from pipeline.cuantizacion import cuantizar_modelo
+                    model = cuantizar_modelo(model)
                 _EDAD = (proc, model)
     return _EDAD
 
@@ -163,6 +192,135 @@ def severidad_pcc(pcc):
 # procesos atípicos (señal de alarma mayor; mejoras_clinicas §3). De los 8 del doc,
 # la omisión de sílabas es la más cercana a 'atípico/evolutivo tardío'.
 ATIPICOS = {"omision_silabas"}
+
+
+# --- Detectores de ORIGEN y SEXO (ECAPA, opcionales) ---------------------------
+# Auto-sugerencia con human-in-the-loop: si decision='consultar' la app debe usar el
+# dato de REGISTRO en vez de la predicción. Requieren models/ entrenados
+# (uv run python src/scripts/10_detectores.py); si faltan, devuelven None sin romper.
+_DETECTORES: dict = {}
+_DET_LOCK = threading.Lock()
+
+
+def _get_detector(tarea):
+    if tarea not in _DETECTORES:
+        with _DET_LOCK:
+            if tarea not in _DETECTORES:
+                try:
+                    from pipeline.detectores import cargar_detector
+                    _DETECTORES[tarea] = cargar_detector(tarea, RAIZ)
+                except Exception:
+                    _DETECTORES[tarea] = None        # modelo no entrenado todavía
+    return _DETECTORES[tarea]
+
+
+def sugerir_origen(onda):
+    """Auto-sugiere origen (España/Latam/No nativo) desde una onda. None si no hay modelo."""
+    det = _get_detector("origen")
+    return det.predict(onda) if det else None
+
+
+def sugerir_sexo(onda):
+    """Auto-sugiere sexo desde una onda. OJO: poco fiable en niños 3-6; usar como
+    respaldo del dato de registro (decision='consultar' -> preguntar). None si no hay modelo."""
+    det = _get_detector("sexo")
+    return det.predict(onda) if det else None
+
+
+# convención del perfil: el detector usa hombre/mujer y España/Latam/No nativo
+_SEXO_PERFIL = {"hombre": "m", "mujer": "f"}
+_ORIGEN_PERFIL = {"España": "es", "Latam": "latam", "No nativo": "no_nativo"}
+
+
+def _wavs_sesion(nino_id, max_clips=8):
+    import glob
+    estado = cargar_estado(nino_id) or {}
+    n = estado.get("n_prueba") or prueba_actual(nino_id)
+    return sorted(glob.glob(os.path.join(DIR_SESIONES, f"{nino_id}_p{n}", "*.wav")))[:max_clips]
+
+
+def _agrega_predicciones(preds):
+    """Media de probabilidades por clase sobre varios clips -> (etiqueta, confianza).
+    Más robusto que el voto simple ante clips dudosos."""
+    if not preds:
+        return None
+    acc = {}
+    for p in preds:
+        for c, v in p["probas"].items():
+            acc[c] = acc.get(c, 0.0) + v
+    etq = max(acc, key=acc.get)
+    return etq, round(acc[etq] / len(preds), 3)
+
+
+def estimar_sexo_sesion(nino_id, max_clips=8):
+    """Sexo estimado por la voz de la prueba en curso (media de probabilidades sobre los
+    clips). Devuelve {'sexo'('m'/'f'),'etiqueta','confianza','decision'} o None."""
+    det = _get_detector("sexo")
+    wavs = _wavs_sesion(nino_id, max_clips)
+    if det is None or not wavs:
+        return None
+    try:
+        ag = _agrega_predicciones(det.predict(wavs))
+    except Exception:
+        return None
+    if ag is None:
+        return None
+    etq, conf = ag
+    return {"sexo": _SEXO_PERFIL.get(etq), "etiqueta": etq, "confianza": conf,
+            "decision": "auto" if conf >= det.umbral else "consultar"}
+
+
+def estimar_origen_sesion(nino_id, max_clips=8):
+    """Origen estimado por la voz (media de probabilidades). Devuelve
+    {'origen'('es'/'latam'/'no_nativo'),'etiqueta','confianza','decision'} o None."""
+    det = _get_detector("origen")
+    wavs = _wavs_sesion(nino_id, max_clips)
+    if det is None or not wavs:
+        return None
+    try:
+        ag = _agrega_predicciones(det.predict(wavs))
+    except Exception:
+        return None
+    if ag is None:
+        return None
+    etq, conf = ag
+    return {"origen": _ORIGEN_PERFIL.get(etq), "etiqueta": etq, "confianza": conf,
+            "decision": "auto" if conf >= det.umbral else "consultar"}
+
+
+def enriquecer_perfil_voz(nino_id):
+    """Tras grabar, completa el SEXO y el ORIGEN que falten en el perfil a partir de la voz
+    de la prueba (determinista; el audio NUNCA va al LLM). Se marcan como estimados
+    ('sexo_estimado'/'origen_estimado') para que la familia los revise en el perfil; NUNCA
+    pisa un dato que la familia ya haya indicado. Devuelve las sugerencias aplicadas.
+
+    Sexo: se rellena siempre que falte (mejor predicción). Origen: solo si hay confianza
+    suficiente (F1 bajo en palabra suelta: no se afirma un origen dudoso, se deja al perfil)."""
+    estado = cargar_estado(nino_id) or {}
+    reg = estado.get("registro") or {}
+    nino = obtener_nino(nino_id) or {}
+    factores = dict(nino.get("factores") or {})
+    aplicado = {}
+
+    if not (reg.get("sexo") or nino.get("sexo")):
+        s = estimar_sexo_sesion(nino_id)
+        if s and s.get("sexo"):
+            reg["sexo"] = s["sexo"]
+            factores["sexo_estimado"] = True
+            aplicado["sexo"] = s
+
+    if not (reg.get("origen") or factores.get("origen")):
+        o = estimar_origen_sesion(nino_id)
+        if o and o.get("origen") and o.get("decision") == "auto":
+            reg["origen"] = factores["origen"] = o["origen"]
+            factores["origen_estimado"] = True
+            aplicado["origen"] = o
+
+    if aplicado:
+        estado["registro"] = reg
+        guardar_estado(nino_id, estado)
+        registrar_nino(nino_id, sexo=reg.get("sexo"), factores=factores)
+    return aplicado
 
 
 # ---------------------------------------------------------------- audio -> palabra
@@ -237,8 +395,9 @@ def puntuar_palabra(palabra, onda, reintentada=False, estrategia=None, modo_infa
 
 
 def segmentos_alineados(onda):
-    """Para el editor interactivo: segmentos de fonema con tiempos (plegado clínico)."""
-    segs_raw, dur = get_w2v().reconoce_alineado(onda)
+    """Para el editor/informe: segmentos de fonema con tiempos (plegado clínico).
+    Usa el modelo de INFORME (full fp32 en híbrido) para máxima calidad clínica."""
+    segs_raw, dur = get_w2v("informe").reconoce_alineado(onda)
     segs = []
     for s in segs_raw:
         nz = normaliza_clinico([s["tok"]])

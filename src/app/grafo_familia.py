@@ -148,6 +148,9 @@ def analizar_prueba(nino_id: str) -> dict:
     # sin edad en el registro: la estima el modelo de voz con los audios de la prueba
     # (queda guardada en el perfil como 'edad_estimada' para que la familia la revise)
     edad = herramientas.edad_o_estimada(nino_id)
+    # completa sexo/origen faltantes desde la voz de la prueba (determinista; audio nunca
+    # va al LLM); quedan como '*_estimado' para que la familia los revise en el perfil
+    herramientas.enriquecer_perfil_voz(nino_id)
     reg = (herramientas.cargar_estado(nino_id) or {}).get("registro") or reg
     res = herramientas.finalizar_sesion(nino_id, edad, palabras,
                                         alias=reg.get("nombre") or reg.get("alias"),

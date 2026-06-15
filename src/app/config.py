@@ -27,6 +27,11 @@ DIR_STATIC = os.path.join(SRC, "app", "static")
 # "restringida" = decodificación por hipótesis clínicas + GOP (por defecto, menos ruido)
 # "libre"       = decodificación CTC abierta (la original; disponible para comparar)
 ESTRATEGIA_RECONOCEDOR = os.getenv("ESTRATEGIA_RECONOCEDOR", "restringida")
+# --- Arquitectura edge-cloud (móvil) ---
+# "edge"=int8 cuantizado en TODO (def: rinde igual o mejor en calidad y −72% peso / 3× más
+# rápido, y evita cargar el modelo full de ~1.2 GB) · "hibrido"=int8 en vivo + full fp32 en
+# el informe · "cloud"=siempre full fp32.
+BACKEND_RECONOCEDOR = os.getenv("HABLI_BACKEND", "edge")
 # Modo infantil: pitch/formant-shift en test-time hacia rango adulto (mismo modelo)
 MODO_INFANTIL = os.getenv("MODO_INFANTIL", "0") in ("1", "true", "True", "si", "sí")
 PITCH_SHIFT_SEMITONOS = float(os.getenv("PITCH_SHIFT_SEMITONOS", "4"))

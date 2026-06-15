@@ -3,6 +3,8 @@
 // un WAV lo lee soundfile/librosa siempre.) Echo/noise suppression desactivados:
 // distorsionan el análisis fonético.
 
+import * as vad from "./vad.js";
+
 const SR_DESTINO = 16000;
 
 let stream = null;
@@ -74,7 +76,10 @@ export function parar() {
   let i = 0;
   for (const t of trozos) { onda.set(t, i); i += t.length; }
   trozos = [];
-  return codificarWav(remuestrear(onda, ctx ? ctx.sampleRate : SR_DESTINO, SR_DESTINO));
+  const onda16 = remuestrear(onda, ctx ? ctx.sampleRate : SR_DESTINO, SR_DESTINO);
+  // VAD on-device: gate de voz ANTES de subir (evita viaje al servidor si no hay voz)
+  const voz = vad.analizarVoz(onda16, SR_DESTINO);
+  return { blob: codificarWav(onda16), voz };
 }
 
 export function liberar() {

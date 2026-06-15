@@ -58,6 +58,28 @@ class XLSREmbedding:
         return np.array(out, dtype=np.float64)
 
 
+def cargar_embeddings_ecapa(df, raiz, sr=16000):
+    """Embeddings ECAPA-TDNN (192-dim) de los clips de `df` (columna ruta_proc), con
+    caché en disco. Backbone ligero (~20 MB) frente a XLS-R (~1.2 GB)."""
+    import librosa
+    cache_npy = os.path.join(raiz, "data", "processed", "emb_ecapa.npy")
+    cache_rut = os.path.join(raiz, "data", "processed", "emb_ecapa_rutas.txt")
+    rutas = list(df["ruta_proc"])
+    if os.path.exists(cache_npy) and os.path.exists(cache_rut):
+        with open(cache_rut, encoding="utf-8") as f:
+            if f.read().splitlines() == rutas:
+                print("Embeddings ECAPA cargados de caché.")
+                return np.load(cache_npy)
+    print("Calculando embeddings ECAPA (se cachean)...")
+    ondas = [librosa.load(os.path.join(raiz, r), sr=sr, mono=True)[0].astype(np.float32)
+             for r in rutas]
+    X = EcapaEmbedding().embed_many(ondas)
+    np.save(cache_npy, X)
+    with open(cache_rut, "w", encoding="utf-8") as f:
+        f.write("\n".join(rutas))
+    return X
+
+
 def cargar_embeddings_xlsr(df, raiz, sr=16000):
     """Embeddings XLS-R de los clips de `df` (columna ruta_proc), con caché en disco."""
     import librosa

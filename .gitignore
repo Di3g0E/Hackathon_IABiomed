@@ -23,3 +23,6 @@ results/*
 # Sistema
 .DS_Store
 Thumbs.db
+
+# Backbone ECAPA descargado (no versionar el blob ~80MB)
+models/ecapa/

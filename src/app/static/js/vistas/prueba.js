@@ -257,9 +257,15 @@ async function ciclo(cont, ninoId, palabra, ctx) {
     temporizadores.push(intervalo);
     zona.querySelector("#cortar").addEventListener("click", () => { clearInterval(intervalo); fin(); });
   });
-  const blob = grabacion.parar();
+  const { blob, voz } = grabacion.parar();
   document.body.classList.remove("fase-verde");
   if (cancelado) return null;
+
+  // --- VAD ON-DEVICE: si no se detectó voz, no subimos nada (ahorra viaje + inferencia)
+  // y pedimos repetir; salvo que ya sea el reintento (entonces se avanza). ---
+  if (voz && !voz.hayVoz && !ctx.reintentada) {
+    return { valida: false, calidad: { motivo: voz.motivo }, _local: true };
+  }
 
   // --- SUBIENDO: sin pantalla nueva (cambiar tanto confunde): se mantiene el dibujo
   // de la palabra con los puntos animados debajo mientras se analiza ---

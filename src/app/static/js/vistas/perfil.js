@@ -31,11 +31,26 @@ export async function render(cont) {
         </div>
       </div>
 
-      <select class="h-select h-select--bocadillo" id="p-sexo" aria-label="Sexo">
-        <option value="" ${!nino?.sexo ? "selected" : ""}>Sexo: prefiero no decirlo</option>
-        <option value="m" ${nino?.sexo === "m" ? "selected" : ""}>Niño</option>
-        <option value="f" ${nino?.sexo === "f" ? "selected" : ""}>Niña</option>
-      </select>
+      <div>
+        <p class="texto-caption" style="margin:0 0 8px 12px">Sexo${f.sexo_estimado
+          ? " · ✨ estimado por la voz — revísalo" : ""}</p>
+        <select class="h-select h-select--bocadillo" id="p-sexo" aria-label="Sexo">
+          <option value="" ${!nino?.sexo ? "selected" : ""}>Prefiero no decirlo</option>
+          <option value="m" ${nino?.sexo === "m" ? "selected" : ""}>Niño</option>
+          <option value="f" ${nino?.sexo === "f" ? "selected" : ""}>Niña</option>
+        </select>
+      </div>
+
+      <div>
+        <p class="texto-caption" style="margin:0 0 8px 12px">Variante del español (acento)${f.origen_estimado
+          ? " · ✨ estimada por la voz — revísala" : ""}</p>
+        <select class="h-select h-select--bocadillo" id="p-origen" aria-label="Variante del español">
+          <option value="" ${!f.origen ? "selected" : ""}>Prefiero no decirlo</option>
+          <option value="es" ${f.origen === "es" ? "selected" : ""}>España</option>
+          <option value="latam" ${f.origen === "latam" ? "selected" : ""}>Latinoamérica</option>
+          <option value="no_nativo" ${f.origen === "no_nativo" ? "selected" : ""}>Aprende español (no nativo)</option>
+        </select>
+      </div>
 
       <input class="h-input h-input--bocadillo" id="p-lengua" maxlength="30"
              placeholder="Lengua materna (por ejemplo: español)" aria-label="Lengua materna"
@@ -99,13 +114,16 @@ export async function render(cont) {
         factores: {
           ...f,
           avatar: avatarElegido,
+          origen: slot.querySelector("#p-origen").value || null,
           lengua_materna: slot.querySelector("#p-lengua").value.trim() || null,
           bilinguismo: slot.querySelector("#p-bilinguismo").checked,
           problemas_auditivos: slot.querySelector("#p-audicion").checked,
           email_especialista: slot.querySelector("#p-email").value.trim() || null,
           consentimiento_datos: slot.querySelector("#p-consentimiento-datos").checked,
-          // al guardar, la familia ya ha revisado la edad: deja de ser "estimada"
+          // al guardar, la familia ya ha revisado: estos datos dejan de ser "estimados"
           ...(edad ? { edad_estimada: false } : {}),
+          ...(slot.querySelector("#p-sexo").value ? { sexo_estimado: false } : {}),
+          ...(slot.querySelector("#p-origen").value ? { origen_estimado: false } : {}),
         },
       });
       boton.textContent = "✔ Guardado";
