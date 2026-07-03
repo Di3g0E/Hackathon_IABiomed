@@ -311,9 +311,13 @@ def enriquecer_perfil_voz(nino_id):
 
     if not (reg.get("origen") or factores.get("origen")):
         o = estimar_origen_sesion(nino_id)
-        if o and o.get("origen") and o.get("decision") == "auto":
+        # se guarda SIEMPRE la sugerencia (marcada como estimada) para que el acento se
+        # prediga y aparezca; el popup de confirmación y el perfil permiten corregirla
+        # (HITL). 'origen_confianza' conserva si fue 'auto' o 'consultar'.
+        if o and o.get("origen"):
             reg["origen"] = factores["origen"] = o["origen"]
             factores["origen_estimado"] = True
+            factores["origen_confianza"] = o.get("decision")
             aplicado["origen"] = o
 
     if aplicado:
@@ -394,10 +398,7 @@ def puntuar_palabra(palabra, onda, reintentada=False, estrategia=None, modo_infa
             "estrategia": "libre", "modo_audio": modo_audio}
 
 
-def segmentos_alineados(onda):
-    """Para el editor/informe: segmentos de fonema con tiempos (plegado clínico).
-    Usa el modelo de INFORME (full fp32 en híbrido) para máxima calidad clínica."""
-    segs_raw, dur = get_w2v("informe").reconoce_alineado(onda)
+def _plegar_segmentos(segs_raw, dur):
     segs = []
     for s in segs_raw:
         nz = normaliza_clinico([s["tok"]])
@@ -405,6 +406,13 @@ def segmentos_alineados(onda):
             segs.append({"label": nz[0], "t_ini": s["t_ini"], "t_fin": s["t_fin"],
                          "conf": s["conf"]})
     return {"segmentos": segs, "duracion": round(dur, 3)}
+
+
+def segmentos_alineados(onda):
+    """Para el editor/informe: segmentos de fonema con tiempos (plegado clínico).
+    Usa el modelo de INFORME (full fp32 en híbrido) para máxima calidad clínica."""
+    segs_raw, dur = get_w2v("informe").reconoce_alineado(onda)
+    return _plegar_segmentos(segs_raw, dur)
 
 
 # ---------------------------------------------------------------- sesión / riesgo

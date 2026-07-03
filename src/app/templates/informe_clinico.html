@@ -277,17 +277,39 @@
     </div>
     <div class="campo">
       <div class="etiqueta">Edad</div>
-      <div class="valor">{{ edad | default('—') }} años</div>
+      <div class="valor">{{ edad | default('—') }} años{% if perfil and perfil.edad_estimada %} <span style="font-size:7.5pt;color:var(--habli-gris-400)">(estimada)</span>{% endif %}</div>
     </div>
     <div class="campo">
-      <div class="etiqueta">Pruebas realizadas</div>
+      <div class="etiqueta">Sexo</div>
+      <div class="valor">{{ (perfil.sexo if perfil else None) | default('—') }}{% if perfil and perfil.sexo and perfil.sexo_estimado %} <span style="font-size:7.5pt;color:var(--habli-gris-400)">(estimado)</span>{% endif %}</div>
+    </div>
+    <div class="campo">
+      <div class="etiqueta">Pruebas</div>
       <div class="valor">{{ pruebas | default([]) | length }}</div>
     </div>
+  </div>
+
+  <!-- ===================== Perfil (datos de la familia) ===================== -->
+  {% if perfil %}
+  <div class="ficha no-romper">
     <div class="campo">
-      <div class="etiqueta">Herramienta</div>
-      <div class="valor">Habli · cribado TDL</div>
+      <div class="etiqueta">Variante del español</div>
+      <div class="valor">{{ perfil.origen | default('—') }}{% if perfil.origen and perfil.origen_estimado %} <span style="font-size:7.5pt;color:var(--habli-gris-400)">(estimada)</span>{% endif %}</div>
+    </div>
+    <div class="campo">
+      <div class="etiqueta">Lengua materna</div>
+      <div class="valor">{{ perfil.lengua_materna | default('—') }}</div>
+    </div>
+    <div class="campo">
+      <div class="etiqueta">Bilingüismo</div>
+      <div class="valor">{{ 'Sí' if perfil.bilinguismo else 'No' }}</div>
+    </div>
+    <div class="campo">
+      <div class="etiqueta">Antecedentes auditivos</div>
+      <div class="valor">{{ 'Sí' if perfil.problemas_auditivos else 'No' }}</div>
     </div>
   </div>
+  {% endif %}
 
   <!-- ===================== Encuadre ===================== -->
   <div class="encuadre no-romper">

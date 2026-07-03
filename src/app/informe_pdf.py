@@ -298,9 +298,28 @@ def datos_desde_nino(nino_id):
                for e in pruebas_ev]
     scr = next((e["payload"] for e in reversed(tl) if e["tipo"] == "screening"), None)
 
+    import json as _json
+    fac = {}
+    if fila and fila["factores_json"]:
+        try:
+            fac = _json.loads(fila["factores_json"])
+        except Exception:
+            fac = {}
+    _ORIGEN = {"es": "España", "latam": "Latinoamérica", "no_nativo": "Aprende español (no nativo)"}
+    _SEXO = {"m": "Niño", "f": "Niña"}
+    perfil = {
+        "sexo": _SEXO.get(fila["sexo"] if fila else None),
+        "sexo_estimado": bool(fac.get("sexo_estimado")),
+        "edad_estimada": bool(fac.get("edad_estimada")),
+        "origen": _ORIGEN.get(fac.get("origen")),
+        "origen_estimado": bool(fac.get("origen_estimado")),
+        "lengua_materna": fac.get("lengua_materna"),
+        "bilinguismo": bool(fac.get("bilinguismo")),
+        "problemas_auditivos": bool(fac.get("problemas_auditivos")),
+    }
     return {
         "alias": (fila["alias"] if fila else nino_id), "edad": edad,
-        "screening": scr, "pruebas": pruebas, "evolucion": ev,
+        "perfil": perfil, "screening": scr, "pruebas": pruebas, "evolucion": ev,
     }
 
 

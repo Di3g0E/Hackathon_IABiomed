@@ -12,6 +12,47 @@ function fecha(ts) {
   } catch { return ts; }
 }
 
+const ORIGEN_TXT = { es: "España", latam: "Latinoamérica", no_nativo: "Aprende español (no nativo)" };
+const SEXO_TXT = { m: "Niño", f: "Niña" };
+
+// Popup que confirma las predicciones del modelo (edad/sexo/origen) ANTES de generar o
+// enviar el informe. Resuelve true si la familia confirma; false si cancela.
+function confirmarDatos(ninoId) {
+  return new Promise(async (resolve) => {
+    let nino = null;
+    try { nino = await api.getNino(ninoId); } catch { /* sin perfil */ }
+    const f = nino?.factores || {};
+    const est = (cond) => cond ? ` <span class="texto-caption">(estimado por la voz · revisa)</span>` : "";
+    const fila = (et, val, marca) =>
+      `<li style="margin:6px 0"><strong>${et}:</strong> ${val || "—"}${marca}</li>`;
+    const fondo = document.createElement("div");
+    fondo.className = "modal-fondo";
+    fondo.innerHTML = `
+      <div class="modal-caja h-card anima-aparece">
+        <h2 style="margin-top:0">Confirma los datos del peque</h2>
+        <p class="texto-secundario">Antes de generar el informe para el especialista, revisa los
+        datos. Los marcados como «estimado» los ha deducido el modelo a partir de la voz.</p>
+        <ul style="list-style:none;padding:0;margin:12px 0">
+          ${fila("Edad", nino?.edad ? nino.edad + " años" : null, est(f.edad_estimada))}
+          ${fila("Sexo", SEXO_TXT[nino?.sexo], est(f.sexo_estimado))}
+          ${fila("Variante del español", ORIGEN_TXT[f.origen], est(f.origen_estimado))}
+          ${fila("Lengua materna", f.lengua_materna, "")}
+        </ul>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end">
+          <button class="h-btn h-btn--fantasma" data-acc="editar">✏️ Editar en el perfil</button>
+          <button class="h-btn" data-acc="ok">✔ Confirmar y continuar</button>
+        </div>
+      </div>`;
+    document.body.appendChild(fondo);
+    fondo.addEventListener("click", (ev) => {
+      const acc = ev.target?.dataset?.acc;
+      if (acc === "editar") { fondo.remove(); resolve(false); location.hash = "#/perfil"; }
+      else if (acc === "ok") { fondo.remove(); resolve(true); }
+      else if (ev.target === fondo) { fondo.remove(); resolve(false); }
+    });
+  });
+}
+
 export async function render(cont) {
   const ninoId = estado.getNinoId();
   const { slot, nino } = await montarShell(cont, "#/historico", "Mis resultados");
@@ -60,15 +101,22 @@ export async function render(cont) {
       <p class="texto-secundario">El informe completo (con el detalle clínico) es para el
       profesional. Cribado, no diagnóstico.</p>
       <div style="display:flex;gap:12px;flex-wrap:wrap">
-        <a class="h-btn" href="${api.urlInforme(ninoId)}" target="_blank" rel="noopener">📄 Ver informe</a>
+        <button class="h-btn" id="btn-ver">📄 Ver informe</button>
         <button class="h-btn h-btn--secundario" id="btn-enviar">✉️ Enviar al especialista</button>
       </div>
-      <p class="texto-caption" style="margin-top:10px">El informe se abre en una pestaña;
-      desde ahí puedes guardarlo en PDF con «Imprimir» (Ctrl+P).</p>
+      <p class="texto-caption" style="margin-top:10px">Antes de generarlo confirmarás los datos
+      del peque. El informe se abre en una pestaña; guárdalo en PDF con «Imprimir» (Ctrl+P).</p>
     </div>` : ""}`;
 
+  slot.querySelector("#btn-ver")?.addEventListener("click", async () => {
+    if (await confirmarDatos(ninoId)) {
+      window.open(api.urlInforme(ninoId), "_blank", "noopener");
+    }
+  });
+
   slot.querySelector("#btn-enviar")?.addEventListener("click", async () => {
-    let email = nino?.factores?.email_especialista;
+    if (!await confirmarDatos(ninoId)) return;
+    let email = (await api.getNino(ninoId).catch(() => null))?.factores?.email_especialista;
     if (!email) {
       email = prompt("Email del especialista (puedes guardarlo en el perfil):");
       if (!email) return;
