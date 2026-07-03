@@ -6,6 +6,8 @@ __pycache__/
 # Secretos y base de datos local (datos sensibles, RGPD)
 .env
 data/*.sqlite
+**.zip
+**.mp4
 
 # Datos pesados (no versionar audios ni corpus descargados)
 data/raw/*
